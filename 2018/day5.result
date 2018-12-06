@@ -1,0 +1,55 @@
+Got result of length 10972 in 500 iterations starting with polymer of length 50000
+Unit count: 10972
+Got result of length 10562 in 480 iterations starting with polymer of length 50000
+Stripped polymer a to 10562 length
+Got result of length 10536 in 487 iterations starting with polymer of length 50000
+Stripped polymer b to 10536 length
+Got result of length 10552 in 483 iterations starting with polymer of length 50000
+Stripped polymer c to 10552 length
+Got result of length 10570 in 477 iterations starting with polymer of length 50000
+Stripped polymer d to 10570 length
+Got result of length 10474 in 482 iterations starting with polymer of length 50000
+Stripped polymer e to 10474 length
+Got result of length 10534 in 485 iterations starting with polymer of length 50000
+Stripped polymer f to 10534 length
+Got result of length 10512 in 476 iterations starting with polymer of length 50000
+Stripped polymer g to 10512 length
+Got result of length 10550 in 481 iterations starting with polymer of length 50000
+Stripped polymer h to 10550 length
+Got result of length 10520 in 479 iterations starting with polymer of length 50000
+Stripped polymer i to 10520 length
+Got result of length 10560 in 484 iterations starting with polymer of length 50000
+Stripped polymer j to 10560 length
+Got result of length 10502 in 477 iterations starting with polymer of length 50000
+Stripped polymer k to 10502 length
+Got result of length 10576 in 479 iterations starting with polymer of length 50000
+Stripped polymer l to 10576 length
+Got result of length 10528 in 475 iterations starting with polymer of length 50000
+Stripped polymer m to 10528 length
+Got result of length 10560 in 475 iterations starting with polymer of length 50000
+Stripped polymer n to 10560 length
+Got result of length 10498 in 481 iterations starting with polymer of length 50000
+Stripped polymer o to 10498 length
+Got result of length 10506 in 475 iterations starting with polymer of length 50000
+Stripped polymer p to 10506 length
+Got result of length 10508 in 479 iterations starting with polymer of length 50000
+Stripped polymer q to 10508 length
+Got result of length 10564 in 485 iterations starting with polymer of length 50000
+Stripped polymer r to 10564 length
+Got result of length 10588 in 477 iterations starting with polymer of length 50000
+Stripped polymer s to 10588 length
+Got result of length 10580 in 477 iterations starting with polymer of length 50000
+Stripped polymer t to 10580 length
+Got result of length 10502 in 485 iterations starting with polymer of length 50000
+Stripped polymer u to 10502 length
+Got result of length 10476 in 482 iterations starting with polymer of length 50000
+Stripped polymer v to 10476 length
+Got result of length 10552 in 480 iterations starting with polymer of length 50000
+Stripped polymer w to 10552 length
+Got result of length 5278 in 3092 iterations starting with polymer of length 50000
+Stripped polymer x to 5278 length
+Got result of length 10540 in 475 iterations starting with polymer of length 50000
+Stripped polymer y to 10540 length
+Got result of length 10538 in 485 iterations starting with polymer of length 50000
+Stripped polymer z to 10538 length
+{'strip_polymer': 'x', 'length': 5278}
