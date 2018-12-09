@@ -59,10 +59,15 @@
 # So, in this example, the correct order is CABDFE.
 # 
 # In what order should the steps in your instructions be completed?
-# 
+#
+# answer for my input: JDEKPFABTUHOQSXVYMLZCNIGRW
 
 import re
 class Day7():
+    def __init__(self, time_for_each_task=60, workers=5):
+        self.time_for_each_task = time_for_each_task
+        self.workers = workers
+
     def parse(self, line):
         m = re.search("Step (?P<dependency>\w+) must be finished before step (?P<step>\w+) can begin.", line)
         if not m: return None
@@ -163,9 +168,95 @@ class Day7():
 # With 5 workers and the 60+ second step durations described above, how long
 # will it take to complete all of the steps?
 #
+    def remove_from_work(self, steps, finished_step):
+        for dependencies in steps.values():
+            dependencies -= {finished_step}
+        steps.pop(finished_step)
+        return steps
+
+    def get_next_steps(self, steps):
+        """These are the things we can work on next"""
+        step_list = []
+
+        steps_remaining = set(steps.keys())
+        counter = 0
+        max_counter = 10000
+        next_steps = set()
+
+        for step in steps_remaining:
+            dependencies = steps[step]
+            if len(dependencies) == 0:
+                next_steps.add(step)
+
+        # this is the list of things that can be take for work now
+        return sorted(next_steps)
+
+    def get_task_completion(self, current_clock, task):
+        return current_clock + self.time_for_each_task + (ord(task) - 64)
+
+    def run_work(self, steps, reporter=lambda report: None, tick_max=100000):
+        import sys
+        clock = 0
+        workers = [{'is_working': False, 'id': i + 1} for i in range(self.workers)]
+        done = []
+        print(f"Steps: {steps}")
+        available_work = self.get_next_steps(steps)
+        print(f"Available work: {available_work}")
+        pending_work = set()
+
+        while len(steps) > 0:
+            for w in workers:
+                # complete work
+                if w['is_working'] and clock == w['clock_completion']:
+                    w['is_working'] = False
+                    done.append(w['task'])
+                    steps = self.remove_from_work(steps, w['task'])
+                    available_work = [task for task in self.get_next_steps(steps) if task not in pending_work]
+                    print(f"Available work: {available_work} after completing {w['task']}. steps: {steps}")
+                    w.pop('task')
+                    w.pop('clock_completion')
+                    w.pop('duration')
+                    
+            for w in workers:
+                # assign new work
+                if not w['is_working'] and len(available_work) > 0:
+                    task = available_work.pop(0)
+                    pending_work.add(task)
+                    w['is_working'] = True
+                    w['task'] = task
+                    w['clock_completion'] = self.get_task_completion(clock, task)
+                    w['duration'] = w['clock_completion'] - clock
+
+            # logging
+            reporter({
+                'clock': clock,
+                'workers': workers,
+                'done': done
+            })
+
+            clock += 1
+
+            if clock > tick_max:
+                print('Reached MAX TICK. ABORTING')
+                return None
+
+        return clock - 1
+
+    def print_run_b_entry(self, entry):
+        parts = [str(entry['clock'])]
+        for worker in entry['workers']:
+            if worker['is_working']:
+                parts.append(f"{worker['task']}({worker['duration']}/{worker['clock_completion']})")
+            else:
+                parts.append('.')
+        parts.append("".join(entry['done']))
+        print(" | ".join(parts))
 
     def runB(self, input):
-        print('b')
+        entries = [day.parse(line) for line in input.splitlines()]
+        merged = day.merge_entries(entries)
+        clock = day.run_work(merged, lambda report: self.print_run_b_entry(report))
+        print(f'completed in: {clock} ticks')
 
 if __name__ == "__main__":
     import getopt, sys
