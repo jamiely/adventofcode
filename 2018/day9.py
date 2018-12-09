@@ -75,47 +75,112 @@
 # 
 # What is the winning Elf's score?
 # 
+# 478 players; last marble is worth 71240 points: high score is 375465
+
+from blist import blist
 
 class Day9:
-    def play(self, players, turns, reporter = lambda a: None):
-        state = [0,1]
-        last_index = 1
-        current_player = 1
-        for i in range(2, turns + 1):
-            projected_index = last_index + 2
-            index = projected_index % len(state)
-            if projected_index == len(state):
-                index = len(state)
+    def play(self, player_count, turns, reporter = lambda a: None):
+        marbles = turns
+        state = blist([0])
+        players = [0 for i in range(player_count)]
+        # zero indexed player
+        current_player = 0
+        current_index = 0
+        for marble in range(1, marbles + 1):
+            if marble % 10000 == 0:
+                print(f"{int(marble/marbles * 100)}% complete")
+            projected_insert_location = current_index + 2
+            previous_len = len(state)
+
+            marble_was_removed = False
+            if marble % 23 == 0:
+                players[current_player] += marble
+                projected_insert_location = current_index - 7
+                if projected_insert_location < 0:
+                    insert_location = len(state) + projected_insert_location
+                else: insert_location = projected_insert_location
+                removed_marble = state.pop(insert_location)
+                players[current_player] += removed_marble
+                marble_was_removed = True
+            elif projected_insert_location == previous_len:
+                insert_location = projected_insert_location
+            elif projected_insert_location == previous_len + 1:
+                insert_location = 1
+            elif projected_insert_location == previous_len + 2:
+                insert_location = 2
+            else: insert_location = projected_insert_location
+
+            if not marble_was_removed: state.insert(insert_location, marble)
+            
+            last_index = current_index
+            current_index = insert_location
+
             entry = {
-                'projected': projected_index,
                 'state': state,
-                'insert': i,
-                'index': index,
-                'last': last_index,
-                'player': current_player,
-                'length': len(state)
+                'previous_len': previous_len,
+                'insert_location': insert_location,
+                'projected_insert_location': projected_insert_location,
+                'last_index': last_index,
+                'current_index': current_index,
+                'marble': marble,
+                'player': current_player + 1
             }
             reporter(entry)
-            print(f"Entry: {entry}")
-            state.insert(index, i)
-            last_index = index
-            print(f"last_index={last_index}")
             current_player += 1
-            current_player = current_player % players            
-            # print(f"state: {' '.join([str(c) for c in state])}")
+            current_player = current_player % player_count
+
+        return players
 
     def entry_formatter(self, entry):
         state = [str(i) for i in entry['state']]
-        state.insert(entry['index'], f"({entry['insert']})")
+        state[entry['current_index']] = f"({state[entry['current_index']]})"
+        state_list = " ".join(state)
+        return f"[{entry['player']}] {state_list}"
+
+
+    def get_max_score(self, players):
+        return max(players)
+    
+    def print_scores(self, player):
+        updated = [entry if entry % 23 != 0 else f">{entry}" for entry in player]
+        return f"{sum(player)}: {updated}"
+
+    def entry_formatter2(self, entry):
+        # print(f"Entry: {entry}")
+        state = [str(i) for i in entry['state']]
+        current = state[entry['index']]
+        state[entry['index']] = f"({current})"
 
         line = f"[{entry['player'] + 1}] {' '.join(state)}"
 
         return line
 
     def runA(self, input):
-        print('tbd')
+        day = Day9()
+        player_count = 478
+        turns = 71240
+        players = day.play(player_count = player_count, turns = turns)
+        max_score = day.get_max_score(players)
+        print(f"{player_count} players; last marble is worth {turns} points: high score is {max_score}")
+        # 478 players; last marble is worth 71240 points
+
+# --- Part Two ---
+# 
+# Amused by the speed of your answer, the Elves are curious:
+# 
+# What would the new winning Elf's score be if the number of the last marble
+# were 100 times larger?
+# 
+# 478 players; last marble is worth 7124000 points: high score is 3037741441
+
     def runB(self, input):
-        print('tbd')
+        day = Day9()
+        player_count = 478
+        turns = 71240 * 100
+        players = day.play(player_count = player_count, turns = turns)
+        max_score = day.get_max_score(players)
+        print(f"{player_count} players; last marble is worth {turns} points: high score is {max_score}")
 
 if __name__ == "__main__":
     import sys, getopt
