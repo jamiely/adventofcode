@@ -168,6 +168,7 @@ class Day7():
 # With 5 workers and the 60+ second step durations described above, how long
 # will it take to complete all of the steps?
 #
+# answer: 1048
     def remove_from_work(self, steps, finished_step):
         for dependencies in steps.values():
             dependencies -= {finished_step}
@@ -216,7 +217,7 @@ class Day7():
                     w.pop('task')
                     w.pop('clock_completion')
                     w.pop('duration')
-                    
+
             for w in workers:
                 # assign new work
                 if not w['is_working'] and len(available_work) > 0:

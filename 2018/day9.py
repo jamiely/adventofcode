@@ -77,9 +77,10 @@
 # 
 
 class Day9:
-    def play(self, turns, reporter = lambda a: None):
-        state = [0, 1]
+    def play(self, players, turns, reporter = lambda a: None):
+        state = [0,1]
         last_index = 1
+        current_player = 1
         for i in range(2, turns + 1):
             projected_index = last_index + 2
             index = projected_index % len(state)
@@ -91,6 +92,7 @@ class Day9:
                 'insert': i,
                 'index': index,
                 'last': last_index,
+                'player': current_player,
                 'length': len(state)
             }
             reporter(entry)
@@ -98,17 +100,15 @@ class Day9:
             state.insert(index, i)
             last_index = index
             print(f"last_index={last_index}")
+            current_player += 1
+            current_player = current_player % players            
             # print(f"state: {' '.join([str(c) for c in state])}")
 
     def entry_formatter(self, entry):
         state = [str(i) for i in entry['state']]
         state.insert(entry['index'], f"({entry['insert']})")
 
-        counter = entry['insert']
-        if counter == 0:
-            counter = "-"
-        
-        line = f"[{counter}]  {' '.join(state)}"
+        line = f"[{entry['player'] + 1}] {' '.join(state)}"
 
         return line
 
