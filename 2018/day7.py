@@ -60,3 +60,83 @@
 # 
 # In what order should the steps in your instructions be completed?
 # 
+
+import re
+class Day7():
+    def parse(self, line):
+        m = re.search("Step (?P<dependency>\w+) must be finished before step (?P<step>\w+) can begin.", line)
+        if not m: return None
+        return {'step': m.group('step'), 'dependency': m.group('dependency') }
+
+    def merge_entries(self, entries):
+        steps = {}
+        for entry in entries:
+            step = entry['step']
+            dependency = entry['dependency']
+            if step not in steps:
+                steps[step] = set()
+            if dependency not in steps:
+                steps[dependency] = set()
+            steps[step].add(dependency)
+        return steps
+
+    def get_order(self, entries):
+        # we want to merge the entries together into a dictionary
+        steps = self.merge_entries(entries)
+        step_list = []
+
+        steps_remaining = set(steps.keys())
+        counter = 0
+        max_counter = 10000
+        while len(steps_remaining) > 0 and counter < max_counter:
+            next_steps = set()
+
+            for step in steps_remaining:
+                dependencies = steps[step]
+                if len(dependencies) == 0:
+                    next_steps.add(step)
+
+            next_step = sorted(next_steps)[0]
+            step_list.append(next_step)
+            
+            # then we remove all the next steps from the dependencies
+            for step in steps_remaining:
+                steps[step] -= {next_step}
+
+            steps_remaining.remove(next_step)
+            counter += 1
+
+        if counter >= max_counter:
+            print('max iterations {max_counter} exceeded')
+
+        return "".join(step_list)
+
+    def runA(self, input):
+        entries = [day.parse(line) for line in input.splitlines()]
+        result = day.get_order(entries)
+        print(f'order of entries:\n{result}')
+
+    def runB(self, input):
+        print('b')
+
+if __name__ == "__main__":
+    import getopt, sys
+    day = Day7()
+    opts, args = getopt.getopt(sys.argv[1:], "ab", [])
+
+    should_run_b = False
+    for o, a in opts:
+        if o == "-a":
+            pass
+        elif o == "-b":
+            should_run_b = True
+        else:
+            assert False, "unhandled option"
+    input = ""
+    with open('day7.input') as f:
+        input = f.read()
+
+    if should_run_b:
+        day.runB(input)
+    else:
+        day.runA(input)
