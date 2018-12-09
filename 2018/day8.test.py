@@ -11,6 +11,18 @@ class TestDay8(unittest.TestCase):
         result = day.add_all_metadata(tree)
         self.assertEqual(result, 138)
 
+    def test_value_of_node(self):
+        day = Day8()
+        tree = day.parse("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")
+        value = day.value_of_node(tree)
+        self.assertEqual(value, 66)
+
+    def test_value_of_node1(self):
+        day = Day8()
+        tree = { 'label': 'D', 'metadata': [99], 'metadata_count': 1, 'children_count': 0, 'children': [] }
+        value = day.value_of_node(tree)
+        self.assertEqual(value, 99)
+
     def test_parse(self):
         day = Day8()
         result = day.parse("2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2")
