@@ -88,8 +88,8 @@ class Day9:
         current_player = 0
         current_index = 0
         for marble in range(1, marbles + 1):
-            if marble % 10000 == 0:
-                print(f"{int(marble/marbles * 100)}% complete")
+            # if marble % 10000 == 0:
+            #     print(f"{int(marble/marbles * 100)}% complete")
             projected_insert_location = current_index + 2
             previous_len = len(state)
 
@@ -158,11 +158,10 @@ class Day9:
 
     def runA(self, input):
         day = Day9()
-        player_count = 478
-        turns = 71240
-        players = day.play(player_count = player_count, turns = turns)
+        config = self.parse(input.splitlines()[0])
+        players = day.play(player_count = config['players'], turns = config['marbles'])
         max_score = day.get_max_score(players)
-        print(f"{player_count} players; last marble is worth {turns} points: high score is {max_score}")
+        print(f"{config['players']} players; last marble is worth {config['marbles']} points: high score is {max_score}")
         # 478 players; last marble is worth 71240 points
 
 # --- Part Two ---
@@ -174,31 +173,20 @@ class Day9:
 # 
 # 478 players; last marble is worth 7124000 points: high score is 3037741441
 
+    def parse(self, line):
+        import re
+        m = re.search("(?P<players>\d+) players; last marble is worth (?P<marbles>\d+) points", line)
+        if not m: return None
+
+        return {'marbles': int(m.group('marbles')), 'players': int(m.group('players'))}
+
     def runB(self, input):
         day = Day9()
-        player_count = 478
-        turns = 71240 * 100
-        players = day.play(player_count = player_count, turns = turns)
+        config = self.parse(input.splitlines()[0])
+        players = day.play(player_count = config['players'], turns = config['marbles'] * 100)
         max_score = day.get_max_score(players)
-        print(f"{player_count} players; last marble is worth {turns} points: high score is {max_score}")
+        print(f"{config['players']} players; last marble is worth {config['marbles']} points: high score is {max_score}")
 
 if __name__ == "__main__":
-    import sys, getopt
-    opts, _ = getopt.getopt(sys.argv[1:], "ab", [])
-    day = Day9()
-    should_run_b = False
-    for o, a in opts:
-        if o == "-a":
-            pass
-        elif o == "-b":
-            should_run_b = True
-        else:
-            assert False, "unhandled option"
-    input = ""
-    with open('day8.input') as f:
-        input = f.read()
-
-    if should_run_b:
-        day.runB(input)
-    else:
-        day.runA(input)
+    import common
+    common.main(Day9(), 'day9.input')

@@ -30,6 +30,14 @@ class TestDay9(unittest.TestCase):
         result = day.play(player_count=13, turns=7999)
         self.assertEqual(day.get_max_score(result), 146373)
 
+    def test_parse(self):
+        day = Day9()
+        result = day.parse("478 players; last marble is worth 71240 points")
+        self.assertDictEqual(result, {
+            'players': 478,
+            'marbles': 71240
+        })
+
 #     10 players; last marble is worth 1618 points: high score is 8317
 #     13 players; last marble is worth 7999 points: high score is 146373
 #     17 players; last marble is worth 1104 points: high score is 2764
