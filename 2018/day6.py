@@ -215,6 +215,9 @@ class Day6a:
                 print(f'Failled to fill coord {coord}: {inst}')
         return {'bounding_box': box, 'grid': fill}
 
+
+
+
     def draw_fill(self, box_and_fill):
         fill = box_and_fill['grid']
         box = box_and_fill['bounding_box']
@@ -258,11 +261,11 @@ class Day6a:
         print(f'The max area is {max_item}')
         return max_item
 
-if __name__ == "__main__":
-    with open('day6.input') as f:
-        day6a = Day6a(range(1000))
-        result = day6a.run(list(f))
-        print(f'Result:\n{result}')
+# if __name__ == "__main__":
+#     with open('day6.input') as f:
+#         day6a = Day6a(range(1000))
+#         result = day6a.run(list(f))
+#         print(f'Result:\n{result}')
 
 
 # --- Part Two ---
@@ -310,3 +313,214 @@ if __name__ == "__main__":
 # What is the size of the region containing all locations which have a total
 # distance to all given coordinates of less than 10000?
 #
+# answer with my input: 46554
+class Day6b:
+    def __init__(self, max_distance=10000, labels=string.ascii_lowercase):
+        self.labels = labels
+        self.max_distance = max_distance
+
+    def parse(self, line):
+        """Parses a string into x,y coordinates"""
+        m = re.search(r'(?P<lat>\d+), (?P<long>\d+)', line)
+        if not m:
+            print(f'Failed to parse line "{line}"')
+            return None
+        return { 'x': int(m.group('lat')), 'y': int(m.group('long')) }
+
+    def label_coords(self, coords):
+        for entry in zip(coords, self.labels):
+            coord, label = entry
+            coord['label'] = label
+
+    def get_bounding_box(self, coordinates):
+        """Finds the bounding box for the coordinates"""
+        x1 = 10 * 20
+        y1 = x1
+        x2 = -1
+        y2 = -1
+        for coord in coordinates:
+            x1 = min(x1, coord['x'])
+            y1 = min(y1, coord['y'])
+            x2 = max(x2, coord['x'])
+            y2 = max(y2, coord['y'])
+            
+        return {'left': x1, 'right': x2, 'top': y1, 'bottom': y2, 'width': x2-x1 + 1, 'height': y2-y1 + 1}
+
+    def get_normalized_bounding_box(self, box):
+        """Returns the bounding box normalized so that it's top left corner is at 0, 0"""
+        dx = -box['left']
+        dy = -box['top']
+
+        return {'left': box['left'] + dx, 'right': box['right'] + dx,
+                'top': box['top'] + dy, 'bottom': box['bottom'] + dy,
+                'normalized': True, 'original': box,
+                'height': box['height'], 'width': box['width'],
+                'dx': dx, 'dy': dy}
+
+    def get_normalized_coordinates(self, box, coordinates):
+        return [{
+            'x': coord['x'] + box['dx'],
+            'y': coord['y'] + box['dy'],
+            'label': coord['label']
+        } for coord in coordinates]
+
+    def fill_bounding_box(self, plot, coordinates):
+        box = plot['bounding_box']
+        grid = plot['grid']
+
+        normalized_coords = self.get_normalized_coordinates(box, coordinates)
+
+        for coord in normalized_coords:
+            for x in range(box['width']):
+                for y in range(box['height']):
+                    self.fill_grid_point(grid, coord, x, y)
+
+        return {'bounding_box': box, 'grid': grid}
+
+    def get_coordinates_lying_on_bounds(self, box, coordinates):
+        labels = {}
+        for coord in coordinates:
+            x = coord['x']
+            y = coord['y']
+            if x == 0 or x == box['width'] - 1:
+                labels[coord['label']] = True
+            elif y == 0 or y == box['height'] - 1:
+                labels[coord['label']] = True
+        return labels
+
+    def get_area_counts(self, box_and_grid, coords):
+        grid = box_and_grid['grid']
+        box = box_and_grid['bounding_box']
+
+        label_counts = {}
+        for x in range(box['width']):
+            for y in range(box['height']):
+                entry = grid[x][y]
+                if 'coord' not in entry: continue
+                label = entry['coord']['label']
+                if label not in label_counts:
+                    label_counts[label] = 0
+                label_counts[label] += 1
+
+        for label in self.get_coordinates_lying_on_bounds(box, coords).keys():
+            label_counts[label] = math.inf
+
+        return label_counts
+
+    def fill_grid_point(self, grid, coord, x, y):
+        point = {'x': x, 'y': y}
+        if not grid[x][y]:
+            grid[x][y] = {
+                'coord': coord, 
+                'is_canonical': False,
+                'point': point,
+                'distance': self.manhattan_distance(coord, point)
+                }
+            return
+
+        existing = grid[x][y]
+        # a canonical point is one of the main coordinates. these are not
+        # overriden
+        if existing['is_canonical']:
+            return
+
+        distance = self.manhattan_distance(coord, point)
+        if existing['distance'] == distance:
+            grid[x][y] = {
+                'equivalent': [coord], 
+                'is_canonical': False,
+                'point': point,
+                'distance': distance
+                }
+            return
+
+        if existing['distance'] > distance:
+            grid[x][y] = {
+                'coord': coord, 
+                'is_canonical': False,
+                'point': point,
+                'distance': distance
+                }
+            return
+
+    def manhattan_distance(self, a, b):
+        return abs(a['x'] - b['x']) + abs(a['y'] - b['y'])
+
+    def plot_bounding_box(self, box, coordinates):
+        fill = [[None for y in range(box['height'])] for x in range(box['width'])]
+        # first plot all the coordinates
+        for coord in coordinates:
+            try:
+                x = coord['x'] + box['dx']
+                y = coord['y'] + box['dy']
+                fill[x][y] = None
+            except Exception as inst:
+                print(f'Failled to fill coord {coord}: {inst}')
+        return {'bounding_box': box, 'grid': fill}
+
+    def run(self, lines):
+        coords = [x for x in [self.parse(line) for line in lines] if x]
+        self.label_coords(coords)
+        print(f"Coordinates: {coords[:3]}")
+        box = self.get_normalized_bounding_box(self.get_bounding_box(coords))
+        print(f"Box: {box}")
+        box_and_grid = self.plot_bounding_box(box, coords)
+        norm_coords = self.get_normalized_coordinates(box, coords)
+        calculation = self.calculate(box_and_grid, norm_coords)
+        area = self.get_area_of_calc(box_and_grid, calculation)
+
+        return {'area': area}
+
+    def calculate(self, box_and_grid, normalized_coords):
+        box = box_and_grid['bounding_box']
+        grid = box_and_grid['grid']
+
+        for x in range(box['width']):
+            for y in range(box['height']):
+                sum = 0
+                point = {'x': x, 'y': y}
+                for coord in normalized_coords:
+                    distance = self.manhattan_distance(coord, point)
+                    sum += distance
+                    if sum >= self.max_distance:
+                        sum = math.inf
+                        break
+                grid[x][y] = sum
+
+        return grid
+
+    def get_area_of_calc(self, box_and_grid, calculation):
+        box = box_and_grid['bounding_box']
+        grid = box_and_grid['grid']
+        counter = 0
+        for x in range(box['width']):
+            for y in range(box['height']):
+                value = grid[x][y]
+                if not value: continue
+                if value is math.inf: continue
+                counter += 1
+        return counter
+
+    def draw_calc(self, box, coords, calc):
+        grid = "\n".join(["".join([self.draw_calc_item(calc, coords, x, y) for x in range(box['width'])]) for y in range(box['height'])])
+        return grid
+
+    def draw_calc_item(self, calculation, coords, x, y):
+        value = calculation[x][y]
+        for coord in coords:
+            if coord['x'] == x and coord['y'] == y:
+                return coord['label'].upper()
+
+        if value is math.inf:
+            return "."
+
+        if not value:
+            return "?"
+        
+        return "#"
+
+if __name__ == "__main__":
+    with open('day6.input') as f:
+        day6b = Day6b(labels=range(1000))
+        result = day6b.run(list(f))
+        print(f'Result:\n{result}')
