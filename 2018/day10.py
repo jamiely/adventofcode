@@ -160,6 +160,8 @@
 # 
 # What message will eventually appear in the sky?
 # 
+# HJBJXRAZ
+#
 import common
 import re
 
@@ -244,7 +246,7 @@ class Day10:
 
         return {'width': abs(x1 - x0), 'height': abs(y1 - y0), 'dx': -x0, 'dy': -y0}
 
-    def draw_tick_interactive(self, input):
+    def draw_tick_interactive(self, input, drawer):
         import sys
 
         entries = self.get_input(input)
@@ -253,9 +255,8 @@ class Day10:
         max_area = 100 * 100
         import math
         last_area = math.inf
+        seconds = 0
         while x != 'q':
-            print('Grid:')
-            
             box = self.get_bounding_box(entries)
             area = box['height'] * box['width']
             if last_area < area:
@@ -263,24 +264,45 @@ class Day10:
                 break
 
             if area < max_area:
-                print(self.draw_grid_fast(entries, scale=1))
+                print('Grid:')
+                print(drawer(entries))
                 entries = self.update_entries(entries)
+                seconds += 1
             else:
-                print(f'box is too big, with area {area}')
+                if seconds % 1000 == 0:
+                    print(f'box is too big, with area {area}')
                 for i in range(updates_per_loop):
                     entries = self.update_entries(entries)
+                    seconds += 1
                     if area < max_area:
                         print('box getting small')
                         break
-                        
+
             last_area = area
+
+        return seconds - 1
 
 
     def runA(self, input):
-        self.draw_tick_interactive(input)
+        print("Generating image")
+        self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid_fast(entries, scale = 1))
+        print("Writing to console")
+        self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid(entries))
+
+# --- Part Two ---
+# 
+# Good thing you didn't have to wait, because that would have taken a long time
+# - much longer than the 3 seconds in the example above.
+# 
+# Impressed by your sub-hour communication capabilities, the Elves are curious:
+# exactly how many seconds would they have needed to wait for that message to
+# appear?
+# 
+# 10641
 
     def runB(self, input):
-        print('tbd')
+        seconds = self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid(entries, scale = 1))
+        print(f"Completed in {seconds} seconds.")
 
 if __name__ == "__main__":
     day = Day10()
