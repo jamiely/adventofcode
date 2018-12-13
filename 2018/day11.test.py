@@ -92,6 +92,57 @@ class TestDay11(unittest.TestCase):
         result = day.get_largest_3x3()
         self.assertEqual(result['total_power'], 30)
         print(result)
+
+    def test_largest_nxn_3(self):
+        day = Day11()
+        day.serial_number = 42
+        result = day.get_largest_nxn(3)
+        self.assertEqual(result['total_power'], 30)
+        print(result)
+
+    def test_largest_nxn_2(self):
+        day = Day11()
+        day.serial_number = 42
+        result = day.get_largest_nxn(2)
+        self.assertEqual(result['total_power'], 16)
+        print(result)
+
+    def test_largest_nxn_1(self):
+        day = Day11()
+        day.serial_number = 42
+        result = day.get_largest_nxn(1)
+        self.assertEqual(result['total_power'], 4)
+        print(result)
+
+    def test_largest_nxn_incremental1(self):
+        day = Day11()
+        day.serial_number = 42
+        result = day.get_largest_nxn_incremental_starting_0(1)
+        # print(result)
+        self.assertEqual(result['total_power'], 4)
+
+    def test_largest_nxn_incremental2(self):
+        day = Day11()
+        day.serial_number = 42
+        result = day.get_largest_nxn_incremental_starting_0(2)
+        # print(result)
+        self.assertEqual(result['total_power'], 16)
+
+    def test_largest_nxn_incremental3(self):
+        day = Day11()
+        day.serial_number = 42
+        result = day.get_largest_nxn_incremental_starting_0(3)
+        # print(result)
+        self.assertEqual(result['total_power'], 30)
+
+    def test_max_power_b(self):
+        day = Day11()
+        day.serial_number = 42
+        result = day.max_power_b(13)
+
+        self.assertEqual(result['top_left_index'], (231,250))
+        self.assertEqual(result['n'], 12)
+        self.assertEqual(result['total_power'], 119)
 # 
 # Your goal is to find the 3x3 square which has the largest total power. The
 # square must be entirely within the 300x300 grid. Identify this square using

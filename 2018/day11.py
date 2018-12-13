@@ -1,6 +1,7 @@
 # --- Day 11: Chronal Charge ---
 
 import math
+import time
 
 class Day11:
 
@@ -22,8 +23,8 @@ class Day11:
     def __init__(self):
         self.dimensions = 300
 
-    def create_grid(self, dim = 300):
-        return [[None for y in range(dim)] for x in range(dim)]
+    def create_grid(self, dim = 300, init=None):
+        return [[init for y in range(dim)] for x in range(dim)]
 # 
 # The interface lets you select any 3x3 square of fuel cells. To increase your
 # chances of getting to your destination, you decide to choose the 3x3 square
@@ -63,6 +64,59 @@ class Day11:
     def get_largest_3x3(self):
         return self.get_largest_nxn(3)
 
+    def get_largest_nxn_incremental_starting_0(self, n):
+        previous_increment = self.create_grid(init = 0)
+        result = None
+        for n in range(1, n + 1):
+            print(f'n={n}')
+            result = self.get_largest_nxn_incremental(n, previous_increment)
+            if result is None or 'sum_n' not in result:
+                print(f'Error in previous increment {result}')
+                return None
+            previous_increment = result['sum_n']
+
+        return result
+
+    def get_largest_nxn_incremental(self, n, previous_n):
+        "Expects a previous_n which is the sum of all n before it."
+        print(self.serial_number)
+        # print(self.fill_power_levels())
+        max_bound = self.dimensions - 1
+        levels = self.get_power_levels()
+        sum_levels = self.create_grid()
+
+        start = time.time()
+        largest_sum = {'coord': None, 'value': None, 'index': None}
+        for index in self.indicies():
+            _x, _y = index
+            if _x == 0 or _y == 0 or _x == max_bound or _y == max_bound:
+                sum_levels[_x][_y] = None
+                continue
+
+            sum_levels[_x][_y] = self.get_box_sum_at_top_left_incremental(n, levels, index, previous_n)
+            if sum_levels[_x][_y] is None: continue
+
+            if largest_sum['value'] is None or largest_sum['value'] < sum_levels[_x][_y]:
+                largest_sum['index'] = index
+                largest_sum['value'] = sum_levels[_x][_y]
+        end = time.time()
+        print(f"n={n} calculated box sums in {end - start} seconds.")
+        
+        if largest_sum['index'] is None:
+            return {
+                'total_power': None, 
+                'top_left_index': None, 
+                'coordinates': None
+                }
+        x, y = largest_sum['index']
+
+        return {
+            'total_power': largest_sum['value'], 
+            'top_left_index': largest_sum['index'],
+            'coordinates': [x + 1, y + 1],
+            'sum_n': sum_levels
+            # 'box': self.get_box_around(levels, largest_sum['index'])
+            }
     def get_largest_nxn(self, n):
         print(self.serial_number)
         # print(self.fill_power_levels())
@@ -72,15 +126,16 @@ class Day11:
         for index in self.indicies():
             _x, _y = index
             if _x == 0 or _y == 0 or _x == max_bound or _y == max_bound:
-                sum_levels[_x][_y] = -100000
+                sum_levels[_x][_y] = None
                 continue
 
             sum_levels[_x][_y] = self.get_box_sum_at_top_left(n, levels, index)
 
-        largest_sum = {'coord': None, 'value': -100000}
+        largest_sum = {'coord': None, 'value': None}
         for index in self.indicies():
             x, y = index
-            if largest_sum['value'] < sum_levels[x][y]:
+            if sum_levels[x][y] is None: continue
+            if largest_sum['value'] is None or largest_sum['value'] < sum_levels[x][y]:
                 largest_sum['index'] = index
                 largest_sum['value'] = sum_levels[x][y]
         
@@ -105,6 +160,55 @@ class Day11:
     #             box[dx + 1][dy + 1] = grid[x + dx][y + dy]
     #     return box
 
+    def debug(self, msg, condition):
+        if not condition: return
+
+        # print(msg)
+
+    def get_box_sum_at_top_left_incremental(self, n, grid, coords, previous_n):
+        "We assume that previous_n is a grid containing the sums of (n-1)x(n-1) box at the given coordinate"
+        x, y = coords
+        if previous_n[x][y] is None: return None
+
+        # self.debug(f'box_sum coord={coords} n={n}', x < 2 and y < 2)
+        total = 0
+        # when n = 1, coord (0, 0), we look at []
+        # when n = 2, coord (0, 0), we look at [0, 1], [1, 1], [1, 0]
+        # when n = 3, coord (0, 0), we look at [0, 2], [1, 2], [2, 2], [2, 1], [2, 0]
+
+        # now the diagonal
+        dx = n - 1
+        dy = n - 1
+        _x = x + dx
+        _y = y + dy
+        if not (len(grid) > _x and len(grid[_x]) > _y): return None
+        diag_x = _x
+        diag_y = _y
+        # self.debug(f'box_sum coord={coords} diagonal=({_x}, {_y})', x < 2 and y < 2)
+        total += grid[_x][_y]
+
+        # this is the right edge
+        _x = x + n - 1
+        for dy in range(n):
+            _y = y + dy
+            if _x == diag_x and _y == diag_y: continue
+            if not (len(grid) > _x and len(grid[_x]) > _y): return None
+            # self.debug(f'box_sum coord={coords} top=({_x}, {_y})', x < 2 and y < 2)
+            total += grid[_x][_y]
+
+        # this is the bottom edge
+        _y = y + n - 1
+        for dx in range(n):
+            _x = x + dx
+            if _x == diag_x and _y == diag_y: continue
+            if not (len(grid) > _x and len(grid[_x]) > _y): return None
+            # self.debug(f'box_sum coord={coords} bottom=({_x}, {_y})', x < 2 and y < 2)
+            total += grid[_x][_y]
+        
+        total += previous_n[x][y]
+        
+        return total
+
     def get_box_sum_at_top_left(self, n, grid, coords):
         x, y = coords
         total = 0
@@ -112,7 +216,7 @@ class Day11:
             for dx in range(n):
                 _x = x + dx
                 _y = y + dy
-                if not (len(grid) > _x and len(grid[_x]) > _y): return -100000
+                if not (len(grid) > _x and len(grid[_x]) > _y): return None
 
                 total += grid[x + dx][y + dy]
                 
@@ -194,18 +298,33 @@ class Day11:
 #     232,251,12.
 # 
 # What is the X,Y,size identifier of the square with the largest total power?
+# 233,116,15
+
+    def max_power_b(self, size_limit):
+        max_result = {'total_power': - math.inf}
+        previous_increment = self.create_grid(init = 0)
+        for n in range(1, size_limit + 1):
+            start = time.time()
+            print(f'Computing n={n}')
+            result = self.get_largest_nxn_incremental(n, previous_increment)
+            previous_increment = result['sum_n']
+            if result['total_power'] > max_result['total_power']:
+                max_result = result
+                max_result['n'] = n
+            end = time.time()
+            print(f'Max total power: {max_result["total_power"]} origin: {max_result["top_left_index"]} n={max_result["n"]} in {end - start} seconds.')
+            x, y = max_result['top_left_index']
+            print(f"The answer so far is \"{x+1},{y+1},{max_result['n']}\"")
+
+        print(f'Max total power: {max_result["total_power"]} origin: {max_result["top_left_index"]}')
+        x, y = max_result['top_left_index']
+        print(f"The answer is \"{x+1},{y+1},{max_result['n']}\"")
+
+        return max_result
 
     def runB(self, input):
         self.serial_number = self.parse(input)
-        max_result = {'total_power': - math.inf}
-        for n in range(1, 301):
-            print(f'Computing n={n}')
-            result = self.get_largest_nxn(n)
-            if result['total_power'] > max_result['total_power']:
-                max_result = result
-            print(f'Max total power: {max_result}')
-
-        print(max_result)
+        return self.max_power_b(301)
 
     def parse(self, input):
         return int(input.strip())
