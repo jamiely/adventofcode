@@ -218,14 +218,15 @@ class Day12:
 #
     def init_state(self, initial_state):
         state_len = len(initial_state)
-        new_len = state_len * 3
+        pad_factor = 7
+        new_len = state_len * pad_factor
         padding = ['.' for i in range(state_len)]
         return {
             # 0
             'origin_index': len(padding),
             'first_index': -len(padding),
             'length': new_len,
-            'state': padding + initial_state + padding
+            'state': padding + initial_state + (padding * (pad_factor - 2))
         }
 
     def rule_matches(self, rule, pattern):
@@ -241,37 +242,70 @@ class Day12:
 
 
     def runA(self, input):
+        return self.run_with_generations(input, 20)
+
+    def run_with_generations(self, input, generations):
         initial = self.load_input(input)
-        self.print_rules(initial['rules'])
+        # self.print_rules(initial['rules'])
         initial_state = initial['initial_state']['state']
         rules = initial['rules']
         state = self.init_state(initial_state)
         state['generation'] = 0
         state['current_state'] = state['state']
 
-        generations = 20
-        print(f'runA with {generations} generations')
-        self.print_state(state)
+        cache = {}
+
+        # print(f'runA with {generations} generations')
+        # self.print_state(state)
+        exit_generation = None
+        last_stats = []
         for i in range(0, generations):
             rule_results = self.get_rules_results_for_all_indices(state, rules)
             self.apply_rule_results_to_state(state, rule_results)
-            state['generation'] += 1
             self.print_state(state)
+            state_str = "".join(state['current_state']).strip(".")
+            if state_str in cache:
+                print(f'i={i} already seen in generation {cache[state_str]}')
+                stats = self.get_stats(state)
+                stats['generation'] = i
+                last_stats.append(stats)
+                print(stats)
+                if exit_generation is None:
+                    exit_generation = i + 3
+            else:
+                cache[state_str] = i
 
-        count = self.compute_sum_of_numbers(state)
+            if exit_generation and exit_generation == i:
+                break
+            state['generation'] = i + 1
 
-        print(f'There sum of plants is {count}.')
+        stats = self.get_stats(state)
+        stats['generation'] = i
+        stats['history'] = last_stats
+        print(f'Stats: {stats}.')
 
-        return count
+        return stats
 
     def compute_sum_of_numbers(self, state):
+        return self.get_stats(state)['sum_of_pot_numbers']
+
+    def get_stats(self, state):
+        first_index_of_plant = None
         sum = 0
+        numbers = []
         for i in range(0, len(state['current_state'])):
             index = i + state['first_index']
-            if state['current_state'][i] == '#':
-                sum += index
-        return sum
+            if state['current_state'][i] != '#': continue
+            if not first_index_of_plant: first_index_of_plant = i
+            sum += index
+            numbers.append(i)
 
+        return {
+            'first_plant_index': first_index_of_plant, 
+            'sum_of_pot_numbers': sum,
+            'count_of_pots': len(numbers),
+            'pot_numbers': numbers
+            }
 
 
     def print_state(self, state):
@@ -282,7 +316,54 @@ class Day12:
             print(f'{rule["id"]}: {rule["pattern"]} => {rule["result"]}')
 
     def runB(self, input):
-        print('tbd')
+        max_generation = 1000
+        stats = self.run_with_generations(input, max_generation)
+        first_plant_index = stats['first_plant_index']
+        generation = stats['generation']
+        count = stats['count_of_pots']
+        delta = first_plant_index - generation
+
+        history = stats['history']
+        delta_sum_history = None
+        target_generation = 50000000000
+        other_sum = None
+        if len(history) >= 2:
+            history_a = stats['history'][0]
+            history_b = stats['history'][1]
+            last_history = history[len(history) - 1]
+            last_generation = last_history['generation']
+            last_sum = last_history['sum_of_pot_numbers']
+
+            delta_sum_history = abs(history_a['sum_of_pot_numbers'] - history_b['sum_of_pot_numbers'])
+            generation_delta = target_generation - last_generation - 1
+            other_sum = last_sum + generation_delta * delta_sum_history
+        
+        plant_number = target_generation + delta
+        numbers = []
+        for i in range(0, count):
+            numbers.append(plant_number)
+            plant_number += 2
+
+        # answer = sum(numbers)
+        answer = other_sum
+        print({
+            'delta': delta,
+            'sum': answer,
+            'numbers': numbers,
+            'history_count': len(history),
+            'other_sum': other_sum,
+            'last_sum': last_sum,
+            'last_generation': last_generation,
+            'delta_sum_history': delta_sum_history
+        })
+
+        return answer
+
+    # bad answers:
+    # * 4350000009657 too high
+    # * 4350000001044 too high
+    # * 4350000000957 right answer (off by one error)
+    
 
 class State:
     def __init__(self, state):

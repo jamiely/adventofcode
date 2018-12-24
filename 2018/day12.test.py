@@ -23,8 +23,8 @@ class TestDay12(unittest.TestCase):
         self.assertDictEqual(result, {
             'first_index': -3,
             'origin_index': 3,
-            'length': 3 * 3,
-            'state': list('...###...')
+            'length': 3 * 7,
+            'state': list('...###...............')
         })
 
     def test_load_input(self):
@@ -33,10 +33,20 @@ class TestDay12(unittest.TestCase):
         self.assertTrue(result['initial_state'] is not None)
         self.assertEqual(len(result['rules']), 14)
 
-    def test_run(self):
+    def test_run_a(self):
         day = Day12()
         result = day.runA(TestDay12.input1)
-        self.assertEqual(result, 325)
+        self.assertEqual(result['sum_of_pot_numbers'], 325)
+
+    def test_run_b_small_in(self):
+        day = Day12()
+        result = day.runB(TestDay12.input1)
+        self.assertEqual(result, 999999999374)
+
+    def test_run_b(self):
+        day = Day12()
+        result = day.runB(self.get_real_input())
+        self.assertEqual(result, 4350000000957)
 
     def test_state_pattern_at(self):
         day = Day12()
@@ -110,6 +120,10 @@ class TestDay12(unittest.TestCase):
             'index': 2,
             'value': '#'
         })
+
+    def get_real_input(self):
+        with open('day12.input') as f:
+            return f.read()
 
     input1 = """
 initial state: #..#.#..##......###...###
