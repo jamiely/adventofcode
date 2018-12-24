@@ -15,6 +15,6 @@ def main(day, input_path):
         input = f.read()
 
     if should_run_b:
-        day.runB(input)
+        day.run_b(input)
     else:
-        day.runA(input)
+        day.run_a(input)

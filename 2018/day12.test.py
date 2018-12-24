@@ -35,17 +35,17 @@ class TestDay12(unittest.TestCase):
 
     def test_run_a(self):
         day = Day12()
-        result = day.runA(TestDay12.input1)
+        result = day.run_a(TestDay12.input1)
         self.assertEqual(result['sum_of_pot_numbers'], 325)
 
     def test_run_b_small_in(self):
         day = Day12()
-        result = day.runB(TestDay12.input1)
+        result = day.run_b(TestDay12.input1)
         self.assertEqual(result, 999999999374)
 
     def test_run_b(self):
         day = Day12()
-        result = day.runB(self.get_real_input())
+        result = day.run_b(self.get_real_input())
         self.assertEqual(result, 4350000000957)
 
     def test_state_pattern_at(self):

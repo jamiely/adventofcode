@@ -268,7 +268,7 @@ class Day11:
 # the largest total power?
 # 
 # Your puzzle input is 9995.
-    def runA(self, input):
+    def run_a(self, input):
         self.serial_number = self.parse(input)
         result = self.get_largest_3x3()
         print(result)
@@ -322,7 +322,7 @@ class Day11:
 
         return max_result
 
-    def runB(self, input):
+    def run_b(self, input):
         self.serial_number = self.parse(input)
         return self.max_power_b(301)
 

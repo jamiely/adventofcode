@@ -156,7 +156,7 @@ class Day9:
 
         return line
 
-    def runA(self, input):
+    def run_a(self, input):
         day = Day9()
         config = self.parse(input.splitlines()[0])
         players = day.play(player_count = config['players'], turns = config['marbles'])
@@ -180,7 +180,7 @@ class Day9:
 
         return {'marbles': int(m.group('marbles')), 'players': int(m.group('players'))}
 
-    def runB(self, input):
+    def run_b(self, input):
         day = Day9()
         config = self.parse(input.splitlines()[0])
         players = day.play(player_count = config['players'], turns = config['marbles'] * 100)

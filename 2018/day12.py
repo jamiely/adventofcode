@@ -241,7 +241,7 @@ class Day12:
         return self.state['state'][lower:upper]
 
 
-    def runA(self, input):
+    def run_a(self, input):
         return self.run_with_generations(input, 20)
 
     def run_with_generations(self, input, generations):
@@ -255,7 +255,7 @@ class Day12:
 
         cache = {}
 
-        # print(f'runA with {generations} generations')
+        # print(f'run_a with {generations} generations')
         # self.print_state(state)
         exit_generation = None
         last_stats = []
@@ -315,7 +315,7 @@ class Day12:
         for rule in rules:
             print(f'{rule["id"]}: {rule["pattern"]} => {rule["result"]}')
 
-    def runB(self, input):
+    def run_b(self, input):
         max_generation = 1000
         stats = self.run_with_generations(input, max_generation)
         first_plant_index = stats['first_plant_index']

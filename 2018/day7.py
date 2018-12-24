@@ -116,7 +116,7 @@ class Day7():
 
         return "".join(step_list)
 
-    def runA(self, input):
+    def run_a(self, input):
         entries = [day.parse(line) for line in input.splitlines()]
         result = day.get_order(entries)
         print(f'order of entries:\n{result}')
@@ -253,7 +253,7 @@ class Day7():
         parts.append("".join(entry['done']))
         print(" | ".join(parts))
 
-    def runB(self, input):
+    def run_b(self, input):
         entries = [day.parse(line) for line in input.splitlines()]
         merged = day.merge_entries(entries)
         clock = day.run_work(merged, lambda report: self.print_run_b_entry(report))
@@ -277,6 +277,6 @@ if __name__ == "__main__":
         input = f.read()
 
     if should_run_b:
-        day.runB(input)
+        day.run_b(input)
     else:
-        day.runA(input)
+        day.run_a(input)

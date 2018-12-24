@@ -283,7 +283,7 @@ class Day10:
         return seconds - 1
 
 
-    def runA(self, input):
+    def run_a(self, input):
         print("Generating image")
         self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid_fast(entries, scale = 1))
         print("Writing to console")
@@ -300,7 +300,7 @@ class Day10:
 # 
 # 10641
 
-    def runB(self, input):
+    def run_b(self, input):
         seconds = self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid(entries, scale = 1))
         print(f"Completed in {seconds} seconds.")
 

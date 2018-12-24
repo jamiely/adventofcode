@@ -96,7 +96,7 @@ class Day8:
                 child['metadata'].append(numbers.pop(0))
             current['children'].append(child)
 
-    def runA(self, input):
+    def run_a(self, input):
         tree = self.parse(input)
         total = self.add_all_metadata(tree)
         print(f'The sum of all metadata is {total}')
@@ -143,7 +143,7 @@ class Day8:
 
         return total
 
-    def runB(self, input):
+    def run_b(self, input):
         tree = self.parse(input)
         total = self.value_of_node(tree)
         print(f'The value of the root node is {total}')
@@ -168,6 +168,6 @@ if __name__ == "__main__":
         input = f.read()
 
     if should_run_b:
-        day.runB(input)
+        day.run_b(input)
     else:
-        day.runA(input)
+        day.run_a(input)
