@@ -199,17 +199,17 @@ class Day10:
 
         return "\n".join(["".join([grid[x][y] for x in range(width + 1)]) for y in range(height + 1)])
 
-    def draw_grid_fast(self, entries, scale = 1):
+    def draw_grid_fast(self, entries, out, scale = 1):
         from PIL import Image
 
         import sys
         box = self.get_bounding_box(entries)
-        print(f"Box: {box} scale={scale}")
+        # print(f"Box: {box} scale={scale}")
         width = int(box['width'] / scale) + 1
         height = int(box['height'] / scale) + 1
-        print(f'creating image {width} x {height}')
+        # print(f'creating image {width} x {height}')
         img = Image.new('RGB', (width, height), "black")
-        print(f'created image {self.counter}')
+        print(f'Box: {box} scale={scale} created image {self.counter}  {width} x {height}')
         pixels = img.load()
 
         grid = {}
@@ -221,7 +221,8 @@ class Day10:
             y = int(y / scale)
             pixels[x,y] = (255, 255, 255)
 
-        img.save(f'day10/image.{str(self.counter).zfill(5)}.png')
+        img.save(out, 'PNG')
+        # img.save(f'day10/image.{str(self.counter).zfill(5)}.png')
         self.counter += 1
 
     def update_position(self, entry):
@@ -252,10 +253,12 @@ class Day10:
         entries = self.get_input(input)
         x = ''
         updates_per_loop = 10
-        max_area = 100 * 100
+        max_area = 1000 * 1000
         import math
         last_area = math.inf
         seconds = 0
+        last_entries = None
+        before_last_entries = None
         while x != 'q':
             box = self.get_bounding_box(entries)
             area = box['height'] * box['width']
@@ -279,15 +282,39 @@ class Day10:
                         break
 
             last_area = area
+            before_last_entries = last_entries
+            last_entries = entries
 
-        return seconds - 1
+        return {
+            'entries': before_last_entries,
+            'seconds': seconds - 1
+        }
 
 
     def run_a(self, input):
         print("Generating image")
-        self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid_fast(entries, scale = 1))
-        print("Writing to console")
-        self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid(entries))
+        import subprocess
+        cmd_out = ['ffmpeg',
+           '-y',
+           '-f', 'image2pipe',
+           '-vcodec', 'png',
+           '-r', '10',  # FPS 
+           '-i', '-',  # Indicated input comes from pipe 
+           './day10.mp4']
+
+        pipe = subprocess.Popen(cmd_out, stdin=subprocess.PIPE)
+        result = self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid_fast(entries, pipe.stdin, scale = 1))
+        entries = result['entries']
+        for i in range(0, 100):
+            self.draw_grid_fast(entries, pipe.stdin)
+
+        pipe.stdin.close()
+        pipe.wait()
+        if pipe.returncode != 0:
+            raise sp.CalledProcessError(pipe.returncode, cmd_out)
+
+        # print("Writing to console")
+        # self.draw_tick_interactive(input, drawer=lambda entries: self.draw_grid(entries))
 
 # --- Part Two ---
 # 
