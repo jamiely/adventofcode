@@ -1,17 +1,8 @@
-Test
-====
+https://adventofcode.com/
 
-```bash
-cargo test
-```
+# Day 1
 
-Usage
-=====
-
-* p for problem
-* 1a for the first part of day 1's problem
-
-```bash
-cargo run --example p1a
-cargo run --example p1b
-```
+* What is the sum of the fuel requirements for all of the modules on your
+  spacecraft?
+* What is the sum of the fuel requirements for all of the modules on your
+  spacecraft when also taking into account the mass of the added fuel?
