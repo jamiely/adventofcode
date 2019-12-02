@@ -7,3 +7,4 @@ mod tests {
 }
 
 pub mod p1;
+pub mod day2;
