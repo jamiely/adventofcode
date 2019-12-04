@@ -1,8 +1,16 @@
 Test
 ====
 
+Run all the tests:
+
 ```bash
 cargo test
+```
+
+Run individual tests for a day:
+
+```bash
+cargo test --doc day4
 ```
 
 Usage
