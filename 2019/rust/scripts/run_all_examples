@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+run_example() {
+    local example_name=$1
+
+    echo "Example $example_name"
+    cargo run --example $example_name \
+        2> output/$example_name.err > output/$example_name.log
+    local result=$?
+    echo "Done"
+
+    return $result
+}
+
+run() {
+    mkdir -p output
+
+    for filename in $(ls examples); do
+        local example_name=${filename//.rs/}
+        if ! run_example $example_name; then
+            >&2 echo "ERROR: $example_name failed"
+        fi
+    done
+}
+
+run "#@"

@@ -3,11 +3,11 @@ use std::io::{self, prelude::*, BufReader};
 use num_format::{Locale, ToFormattedString};
 
 /// ```
-/// assert_eq!(aoc2019::p1::calculate_fuel_required(1969), 654);
+/// assert_eq!(aoc2019::day1::calculate_fuel_required(1969), 654);
 /// ```
 /// 
 /// ```
-/// assert_eq!(aoc2019::p1::calculate_fuel_required(100756), 33583);
+/// assert_eq!(aoc2019::day1::calculate_fuel_required(100756), 33583);
 /// ```
 pub fn calculate_fuel_required(mass: i32) -> i32 {
     return (((mass as f32) / 3.0).floor() as i32) - 2;
@@ -15,11 +15,11 @@ pub fn calculate_fuel_required(mass: i32) -> i32 {
 
 ///
 /// ```
-/// assert_eq!(aoc2019::p1::calculate_fuel_required_recurse(1969), 966);
+/// assert_eq!(aoc2019::day1::calculate_fuel_required_recurse(1969), 966);
 /// ```
 /// 
 /// ```
-/// assert_eq!(aoc2019::p1::calculate_fuel_required_recurse(100756), 50346);
+/// assert_eq!(aoc2019::day1::calculate_fuel_required_recurse(100756), 50346);
 /// ```
 pub fn calculate_fuel_required_recurse(mass: i32) -> i32 {
     if mass <= 0 {
@@ -35,7 +35,7 @@ pub fn calculate_fuel_required_recurse(mass: i32) -> i32 {
 }
 
 /// ```
-/// assert_eq!(aoc2019::p1::calc1a("../1.input").unwrap(), 3317100);
+/// assert_eq!(aoc2019::day1::calc1a("../1.input").unwrap(), 3317100);
 /// ```
 pub fn calc1a(filepath: &str) -> io::Result<i32> {
     let file = File::open(filepath)?;
@@ -57,7 +57,7 @@ pub fn run1a(filepath: &str) -> io::Result<()> {
 
 ///
 /// ```
-/// assert_eq!(aoc2019::p1::calc1b("../1.input").unwrap(), 4972784);
+/// assert_eq!(aoc2019::day1::calc1b("../1.input").unwrap(), 4972784);
 /// ```
 pub fn calc1b(filepath: &str) -> io::Result<i32> {
     let file = File::open(filepath)?;

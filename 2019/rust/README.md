@@ -8,13 +8,17 @@ cargo test
 Usage
 =====
 
-* p for problem
-* 1a for the first part of day 1's problem
+```bash
+scripts/run_all_examples
+cat output/*
+```
+
+or individually:
 
 ```bash
-cargo run --example p1a
-cargo run --example p1b
+cargo run --example day1
 cargo run --example day2
 cargo run --example day3
 cargo run --example day4
+# ...
 ```

@@ -182,9 +182,9 @@ pub fn load_instruction_sets(filepath: &str) -> io::Result<Vec<Vec<Instruction>>
 
 // a: 1064
 /// ```
-/// assert_eq!(aoc2019::day3::runA("../input/3.input").unwrap(), 1064);
+/// assert_eq!(aoc2019::day3::run_a("../input/3.input").unwrap(), 1064);
 /// ```
-pub fn runA(filepath: &str) -> io::Result<i32> {
+pub fn run_a(filepath: &str) -> io::Result<i32> {
     let instruction_sets = load_instruction_sets(filepath)?;
     
     let origin = Point{x: 0, y: 0};
@@ -209,9 +209,9 @@ pub fn runA(filepath: &str) -> io::Result<i32> {
 }
 
 /// ```
-/// assert_eq!(aoc2019::day3::runB("../input/3.input").unwrap(), 25676);
+/// assert_eq!(aoc2019::day3::run_b("../input/3.input").unwrap(), 25676);
 /// ```
-pub fn runB(filepath: &str) -> io::Result<usize> {
+pub fn run_b(filepath: &str) -> io::Result<usize> {
     let instruction_sets = load_instruction_sets(filepath)?;
     
     let mut result = 0;
