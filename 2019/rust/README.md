@@ -14,4 +14,7 @@ Usage
 ```bash
 cargo run --example p1a
 cargo run --example p1b
+cargo run --example day2
+cargo run --example day3
+cargo run --example day4
 ```
