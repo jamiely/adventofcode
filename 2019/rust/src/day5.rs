@@ -20,7 +20,89 @@ pub fn parse_codes(reader: BufReader<File>) -> Vec<i32> {
     return codes;
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd)]
+pub enum InstructionOperator {
+    Add = 1,
+    Mult = 2,
+    In = 3,
+    Out = 4,
+    Halt = 99
+}
 
+pub struct ProgramContext {
+    input: String,
+    output: String,
+    instruction_pointer: usize,
+    current_instruction_type: InstructionType,
+    current_instruction_operands: Vec<i32>
+}
+
+impl ProgramContext {
+    fn change(&self) -> ContextChange {
+        return ContextChange {
+            instruction_pointer: self.instruction_pointer, 
+            halt: false,
+            set_values: Vec::new()
+         };
+    }
+}
+
+// changes to apply to the program context
+#[derive(Debug, Clone)]
+pub struct ContextChange {
+    // change the instruction pointer
+    instruction_pointer: usize,
+    halt: bool,
+    // (address, value) pairs to set
+    set_values: Vec<(usize, usize)>
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct InstructionType {
+    op: InstructionOperator,
+    /// the number of operands used by the instruction
+    operand_count: usize,
+    operation: fn(context: ProgramContext) -> Vec<ContextChange>
+}
+
+const instruction_types: &'static [&'static InstructionType] = &[
+    &InstructionType { 
+        op: InstructionOperator::Add, 
+        operand_count: 3,
+        operation: |context: ProgramContext| -> Vec<ContextChange> {
+            let args = context.current_instruction_operands;
+            let sum = args[0] + args[1];
+            let mut change = context.change();
+            change.set_values = [(args[2], sum)].to_vec();
+            return [change].to_vec();
+        } },
+    &InstructionType { 
+        op: InstructionOperator::Mult, 
+        operand_count: 3,
+        operation: |context: ProgramContext| -> Vec<ContextChange> {
+            return [].to_vec();
+        } },
+    &InstructionType { 
+        op: InstructionOperator::In, 
+        operand_count: 1,
+        operation: |context: ProgramContext| -> Vec<ContextChange> {
+            return [].to_vec();
+        } },
+    &InstructionType { 
+        op: InstructionOperator::Out, 
+        operand_count: 1,
+        operation: |context: ProgramContext| -> Vec<ContextChange> {
+            return [].to_vec();
+        } },
+    &InstructionType { 
+        op: InstructionOperator::Halt, 
+        operand_count: 0,
+        operation: |context: ProgramContext| -> Vec<ContextChange> {
+            let mut change = context.change();
+            change.halt = true;
+            return [change].to_vec();
+        } },
+];
 
 fn process_codes(codes: &mut Vec<i32>) -> io::Result<i32> {
     let mut head: usize = 0;
@@ -98,7 +180,7 @@ pub fn run_codes(codes: &mut Vec<i32>) -> io::Result<i32> {
 }
 
 /// ```
-/// let mut codes = aoc2019::day5::get_codes("../input/5.input").unwrap();
+/// let mut codes = aoc2019::day5::get_codes("../input/2.input").unwrap();
 /// assert_eq!(aoc2019::day5::run_with(&mut codes, 12, 2).unwrap(), 11590668);
 /// ```
 pub fn run_with(codes: &mut Vec<i32>, noun: i32, verb: i32) -> io::Result<i32> {
@@ -115,7 +197,7 @@ pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
 }
 
 /// ```
-/// assert_eq!(aoc2019::day5::run_a("../input/5.input").unwrap(), 11590668);
+/// assert_eq!(aoc2019::day5::run_a("../input/2.input").unwrap(), 11590668);
 /// ```
 pub fn run_a(filepath: &str) -> io::Result<i32> {
     let mut codes = get_codes(filepath).unwrap();
@@ -123,7 +205,7 @@ pub fn run_a(filepath: &str) -> io::Result<i32> {
 }
 
 /// ```
-/// let mut codes = aoc2019::day5::get_codes("../input/5.input").unwrap();
+/// let mut codes = aoc2019::day5::get_codes("../input/2.input").unwrap();
 /// assert_eq!(aoc2019::day5::run_b_with(&mut codes, 12, 2, 11590668).unwrap(), 1202);
 /// ```
 pub fn run_b_with(codes: &mut Vec<i32>, noun: i32, verb: i32, target: i32) -> Result<i32, &'static str> {
