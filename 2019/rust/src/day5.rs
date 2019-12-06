@@ -54,7 +54,7 @@ impl Instruction {
 
 pub struct ProgramContext {
     pub input: Option<i32>,
-    output: Option<i32>,
+    output: Vec<i32>,
     instruction_pointer: usize,
     instruction_types_by_opcode: HashMap<usize, InstructionType>,
     codes: Vec<i32>,
@@ -159,7 +159,7 @@ impl ProgramContext {
     }
     pub fn new() -> ProgramContext {
         let input = None;
-        let output = None;
+        let output = Vec::new();
         let instruction_pointer = 0;
         let instruction_types_by_opcode = HashMap::new();
         let codes = Vec::new();
@@ -320,7 +320,7 @@ pub const INSTRUCTION_TYPES: &'static [&'static InstructionType] = &[
 #[derive(Debug, Clone)]
 pub struct ProgramResult {
     pub value: i32,
-    pub output: Option<i32>
+    pub output: Vec<i32>
 }
 
 /// ```
@@ -328,7 +328,7 @@ pub struct ProgramResult {
 /// let mut codes: Vec<i32> = [InstructionOperator::Out as i32, 0, 99].to_vec();
 /// let mut program_context = ProgramContext::new();
 /// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
-/// assert_eq!(program_result.output, Some(4));
+/// assert_eq!(program_result.output, [4].to_vec());
 /// ```
 /// 
 /// ```
@@ -343,7 +343,7 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
     let mut instruction_types: HashMap<usize, InstructionType> = HashMap::new();
     let mut head: usize = 0;
     let mut halt = false;
-    let mut output: Option<i32> = None;
+    let mut output: Vec<i32> = Vec::new();
 
     for _itype in INSTRUCTION_TYPES {
         instruction_types.insert(_itype.op as usize, **_itype);
@@ -355,7 +355,7 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
         program_context.codes = codes.clone();
         program_context.instruction_pointer = head;
         program_context.should_halt = halt;
-        program_context.output = output;
+        program_context.output = output.clone();
         println!("head={} codes={:?}", head, codes);
 
         if head >= codes.len() {
@@ -388,7 +388,7 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
                         _ => {}
                     }
                     match change.write_output {
-                        Some(value) => output = Some(value),
+                        Some(value) => output.push(value),
                         _ => {}
                     }
                     halt = change.halt;
@@ -425,17 +425,6 @@ pub fn run_codes(codes: &mut Vec<i32>) -> io::Result<i32> {
     return Ok(result.value);
 }
 
-/// ```
-/// let mut codes = aoc2019::day5::get_codes("../input/2.input").unwrap();
-/// assert_eq!(aoc2019::day5::run_with(&mut codes, 12, 2).unwrap(), 11590668);
-/// ```
-pub fn run_with(codes: &mut Vec<i32>, noun: i32, verb: i32) -> io::Result<i32> {
-    // init
-    codes[1] = noun;
-    codes[2] = verb;
-    return run_codes(codes);
-}
-
 pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
     let file = File::open(filepath)?;
     let reader = BufReader::new(file);
@@ -443,46 +432,11 @@ pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
 }
 
 /// ```
-/// assert_eq!(aoc2019::day5::run_a("../input/2.input").unwrap(), 11590668);
+/// assert_eq!(aoc2019::day5::run_a("../input/2.input").unwrap().value, 1870666);
 /// ```
-pub fn run_a(filepath: &str) -> io::Result<i32> {
+pub fn run_a(filepath: &str) -> io::Result<ProgramResult> {
     let mut codes = get_codes(filepath).unwrap();
-    return run_with(&mut codes, 12, 2);
-}
-
-/// ```
-/// let mut codes = aoc2019::day5::get_codes("../input/2.input").unwrap();
-/// assert_eq!(aoc2019::day5::run_b_with(&mut codes, 12, 2, 11590668).unwrap(), 1202);
-/// ```
-pub fn run_b_with(codes: &mut Vec<i32>, noun: i32, verb: i32, target: i32) -> Result<i32, &'static str> {
-    let output = run_with(codes, noun, verb).unwrap();
-    if output == target {
-        let result = 100 * noun + verb;
-        return Ok(result);
-    }
-    return Err("Invalid target result");
-}
-
-// 19690720
-pub fn discover_noun_verb(filepath: &str, target: i32) -> io::Result<()> {
-    let file = File::open(filepath)?;
-    let reader = BufReader::new(file);
-    let original_codes = parse_codes(reader);
-
-    for noun in 0..99 {
-        for verb in 0..99 {
-            let mut codes = original_codes.clone();
-            match run_b_with(&mut codes, noun, verb, target) {
-                Ok(result) => {
-                    println!("Found target {} noun={} verb={} result={}", target, noun, verb, result);
-                    return Ok(());
-                }
-                _ => {}
-            }
-        }
-        print!(".");
-    }
-
-    println!("No matching verb and noun found.");
-    return Ok(());
+    let mut context = ProgramContext::new();
+    context.input = Some(1);
+    return process_codes2(&mut context, &mut codes);
 }
