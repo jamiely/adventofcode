@@ -3,6 +3,7 @@
 /// 
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
+use std::collections::HashMap;
 
 fn parse_code_line(line: String) -> Vec<usize> {
     return line.split(',')
@@ -30,11 +31,12 @@ pub enum InstructionOperator {
 }
 
 pub struct ProgramContext {
-    input: String,
-    output: String,
+    pub input: Option<usize>,
+    output: Option<usize>,
     instruction_pointer: usize,
-    current_instruction_type: InstructionType,
-    current_instruction_operands: Vec<usize>
+    instruction_types_by_opcode: HashMap<usize, InstructionType>,
+    codes: Vec<usize>,
+    should_halt: bool
 }
 
 impl ProgramContext {
@@ -42,6 +44,41 @@ impl ProgramContext {
         let mut change = ContextChange::new();
         change.instruction_pointer = self.instruction_pointer;
         return change;
+    }
+
+    fn get_current_opcode(&self) -> usize {
+        return self.codes[self.instruction_pointer];
+    }
+    fn get_current_instruction(&self) -> Option<&InstructionType> {
+        let opcode = self.get_current_opcode();
+        return self.instruction_types_by_opcode.get(&opcode);
+    }
+    fn get_current_instruction_operands(&self) -> Vec<usize> {
+        match self.get_current_instruction() {
+            Some(instr) => {
+                let start = self.instruction_pointer + 1;
+                let end = start + instr.operand_count;
+                return self.codes[start..end].to_vec();
+            }
+            None => Vec::new()
+        }
+    }
+    pub fn new() -> ProgramContext {
+        let input = None;
+        let output = None;
+        let instruction_pointer = 0;
+        let instruction_types_by_opcode = HashMap::new();
+        let codes = Vec::new();
+        let should_halt = false;
+
+        ProgramContext {
+            input,
+            output,
+            instruction_pointer,
+            instruction_types_by_opcode,
+            codes,
+            should_halt,
+        }
     }
 }
 
@@ -77,17 +114,17 @@ impl ContextChange {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct InstructionType {
     op: InstructionOperator,
     /// the number of operands used by the instruction
     operand_count: usize,
-    operation: fn(context: ProgramContext) -> Vec<ContextChange>
+    operation: fn(context: &ProgramContext) -> Vec<ContextChange>
 }
 
 fn three_arg_op(operation: fn(usize, usize) -> usize) -> impl Fn(ProgramContext) -> Vec<ContextChange> {
     move |context: ProgramContext| -> Vec<ContextChange> {
-        let args = context.current_instruction_operands.clone();
+        let args = context.get_current_instruction_operands().clone();
         let sum = operation(args[0], args[1]);
         let mut change = context.change();
         change.set_values = [(args[2], sum)].to_vec();
@@ -95,11 +132,13 @@ fn three_arg_op(operation: fn(usize, usize) -> usize) -> impl Fn(ProgramContext)
     }
 }
 
-fn three_arg_op2(context: ProgramContext, operation: fn(usize, usize) -> usize) -> Vec<ContextChange> {
-    let args = context.current_instruction_operands.clone();
+fn three_arg_op2(context: &ProgramContext, operation: fn(usize, usize) -> usize) -> Vec<ContextChange> {
+    let indicies = context.get_current_instruction_operands().clone();
+    let args: Vec<usize> = indicies.iter().map(|i| context.codes[*i]).collect();
+    // println!("args={:?}", args);
     let sum = operation(args[0], args[1]);
     let mut change = context.change();
-    change.set_values = [(args[2], sum)].to_vec();
+    change.set_values = [(indicies[2], sum)].to_vec();
     return [change].to_vec();
 }
 
@@ -115,160 +154,146 @@ const InstructionTypes: &'static [&'static InstructionType] = &[
     &InstructionType { 
         op: InstructionOperator::Add, 
         operand_count: 3,
-        operation: |context: ProgramContext| -> Vec<ContextChange> {
+        operation: |context: &ProgramContext| -> Vec<ContextChange> {
             return three_arg_op2(context, op_add);
         } },
     &InstructionType { 
         op: InstructionOperator::Mult, 
         operand_count: 3,
-        operation: |context: ProgramContext| -> Vec<ContextChange> {
+        operation: |context: &ProgramContext| -> Vec<ContextChange> {
             return three_arg_op2(context, op_mult);
         } },
     &InstructionType { 
         op: InstructionOperator::In, 
         operand_count: 1,
-        operation: |context: ProgramContext| -> Vec<ContextChange> {
+        operation: |context: &ProgramContext| -> Vec<ContextChange> {
             let mut change = context.change();
-            change.read_input = Some(context.current_instruction_operands[0]);
+            let addr = context.get_current_instruction_operands()[0];
+            change.read_input = Some(addr);
             return [change].to_vec();
         } },
     &InstructionType { 
         op: InstructionOperator::Out, 
         operand_count: 1,
-        operation: |context: ProgramContext| -> Vec<ContextChange> {
+        operation: |context: &ProgramContext| -> Vec<ContextChange> {
             let mut change = context.change();
-            change.write_output = Some(context.current_instruction_operands[0]);
+            let index = context.get_current_instruction_operands()[0];
+            change.write_output = Some(context.codes[index]);
             return [change].to_vec();
         } },
     &InstructionType { 
         op: InstructionOperator::Halt, 
         operand_count: 0,
-        operation: |context: ProgramContext| -> Vec<ContextChange> {
+        operation: |context: &ProgramContext| -> Vec<ContextChange> {
             let mut change = context.change();
             change.halt = true;
             return [change].to_vec();
         } },
 ];
 
-fn process_codes2(codes: &mut Vec<usize>) -> io::Result<usize> {
-    let mut head: usize = 0;
-    let len: usize = codes.len();
+const EmptyInstruction: InstructionType = InstructionType { op: InstructionOperator::Halt, operand_count: 0, 
+    operation: |context: &ProgramContext| -> Vec<ContextChange> {
+        let mut change = context.change();
+        change.halt = true;
+        return [change].to_vec();
+    } };
 
-    loop {
-        let end = head + 3;
-        if end >= len {
-            break;
-        }
-
-        // println!("opcode = {}", codes[head]);
-
-        let result: Result<usize, &'static str> = match codes[head..end] {
-            [opcode, op_index1, op_index2] => {
-                let operand1 = if (op_index1 as usize) < len {
-                    codes[op_index1 as usize]
-                } else { std::usize::MAX };
-
-                let operand2 = if (op_index2 as usize) < len {
-                    codes[op_index2 as usize]
-                } else { std::usize::MAX };
-
-                match opcode {
-                    1 => {
-                        let result = operand1 + operand2;
-                        // println!("[{}] + [{}] == {} + {} == {}", op_index1, op_index2, operand1, operand2, result);
-                        Ok(result)
-                    }
-                    2 => {
-                        let result = operand1 * operand2;
-                        // println!("[{}] * [{}] == {} * {} == {}", op_index1, op_index2, operand1, operand2, result);
-                        Ok(result)
-                    }
-                    99 => Err("INFO: HALT"),
-                    _ => Err("ERROR: Unrecognized opcode"),
-                }
-            }
-            _ => Err("ERROR: Not enough arguments")
-        };
-        match result {
-            Ok(value) => {
-                let op_index = head + 3 as usize;
-                let out_index = codes[op_index] as usize;
-                // println!("[{}] <- {}", out_index, value);
-                codes[out_index] = value;
-            }
-            Err(value) => {
-                println!("Error {}", value);
-                break;
-            }
-        };
-        head = head + 4;
-        if head >= codes.len() {
-            break
-        }
-    }
-    print!("done");
-    return Ok(codes[0]);
-
+fn lookup_instruction_type(opcode: usize) -> Option<InstructionType> {
+    return InstructionTypes
+        .iter()
+        .map(|i| i.clone().to_owned())
+        .find(|itype| itype.op as usize == opcode);
 }
 
-fn process_codes(codes: &mut Vec<usize>) -> io::Result<usize> {
+#[derive(Debug, Clone)]
+pub struct ProgramResult {
+    pub value: usize,
+    pub output: Option<usize>
+}
+
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<usize> = [InstructionOperator::Out as usize, 0, 99].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.output, Some(4));
+/// ```
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<usize> = [InstructionOperator::In as usize, 0, 99].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// program_context.input = Some(13);
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.value, 13);
+/// ```
+pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<usize>) -> io::Result<ProgramResult> {
+    let mut instruction_types: HashMap<usize, InstructionType> = HashMap::new();
     let mut head: usize = 0;
-    let len: usize = codes.len();
+    let mut halt = false;
+    let mut output: Option<usize> = None;
+
+    for _itype in InstructionTypes {
+        instruction_types.insert(_itype.op as usize, **_itype);
+    }
+
+    program_context.instruction_types_by_opcode = instruction_types;
 
     loop {
-        let end = head + 3;
-        if end >= len {
+        program_context.codes = codes.clone();
+        program_context.instruction_pointer = head;
+        program_context.should_halt = halt;
+        program_context.output = output;
+        println!("head={} codes={:?}", head, codes);
+
+        if head >= codes.len() {
+            println!("out of instructions");
+            break;
+        }
+ 
+        if halt {
+            println!("should halt");
             break;
         }
 
-        // println!("opcode = {}", codes[head]);
+        match program_context.get_current_instruction() {
+            Some(instr) => {
+                let changes: Vec<ContextChange> = (instr.operation)(&program_context);
+                println!("operation={:?} changes={:?}", instr.op, changes);
+                for change in changes {
+                    head = change.instruction_pointer;
 
-        let result: Result<usize, &'static str> = match codes[head..end] {
-            [opcode, op_index1, op_index2] => {
-                let operand1 = if (op_index1 as usize) < len {
-                    codes[op_index1 as usize]
-                } else { std::usize::MAX };
-
-                let operand2 = if (op_index2 as usize) < len {
-                    codes[op_index2 as usize]
-                } else { std::usize::MAX };
-
-                match opcode {
-                    1 => {
-                        let result = operand1 + operand2;
-                        // println!("[{}] + [{}] == {} + {} == {}", op_index1, op_index2, operand1, operand2, result);
-                        Ok(result)
+                    for (addr, value) in change.set_values {
+                        codes[addr] = value;
                     }
-                    2 => {
-                        let result = operand1 * operand2;
-                        // println!("[{}] * [{}] == {} * {} == {}", op_index1, op_index2, operand1, operand2, result);
-                        Ok(result)
+
+                    match change.read_input {
+                        Some(address) =>
+                            match program_context.input {
+                                Some(input) => codes[address] = input,
+                                _ => {}
+                            }
+                        _ => {}
                     }
-                    99 => Err("INFO: HALT"),
-                    _ => Err("ERROR: Unrecognized opcode"),
+                    match change.write_output {
+                        Some(value) => output = Some(value),
+                        _ => {}
+                    }
+                    halt = change.halt;
                 }
+
+                head += instr.operand_count + 1;
             }
-            _ => Err("ERROR: Not enough arguments")
-        };
-        match result {
-            Ok(value) => {
-                let op_index = head + 3 as usize;
-                let out_index = codes[op_index] as usize;
-                // println!("[{}] <- {}", out_index, value);
-                codes[out_index] = value;
-            }
-            Err(value) => {
-                println!("Error {}", value);
+            None => {
+                println!("no instruction available");
                 break;
             }
-        };
-        head = head + 4;
-        if head >= codes.len() {
-            break
         }
+
     }
+
     print!("done");
-    return Ok(codes[0]);
+    return Ok(ProgramResult{value: codes[0], output: output});
+
 }
 
 /// ```
@@ -281,9 +306,10 @@ pub fn run_codes(codes: &mut Vec<usize>) -> io::Result<usize> {
         limit = codes.len() - 1;
     }
     println!("Codes Before {:?}", &codes[0..limit]);
-    let result = process_codes(codes).unwrap();
+    let mut program_context = ProgramContext::new();
+    let result = process_codes2(&mut program_context, codes).unwrap();
     println!("Result {:?}", result);
-    return Ok(result);
+    return Ok(result.value);
 }
 
 /// ```
