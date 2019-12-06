@@ -568,11 +568,19 @@ pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
     return Ok(parse_codes(reader));
 }
 
+/// Day 2
 /// ```
-/// assert_eq!(aoc2019::day5::run_a("../input/2.input", None).unwrap().value, 1870666);
-/// assert_eq!(aoc2019::day5::run_a("../input/5.input", Some(1)).unwrap().diagnostic_code, Some(15426686));
+/// assert_eq!(aoc2019::day5::run("../input/2.input", None).unwrap().value, 1870666);
 /// ```
-pub fn run_a(filepath: &str, input: Option<i32>) -> io::Result<ProgramResult> {
+/// Part A
+/// ```
+/// assert_eq!(aoc2019::day5::run("../input/5.input", Some(1)).unwrap().diagnostic_code, Some(15426686));
+/// ```
+/// Part B
+/// ```
+/// assert_eq!(aoc2019::day5::run("../input/5.input", Some(5)).unwrap().diagnostic_code, Some(11430197));
+/// ```
+pub fn run(filepath: &str, input: Option<i32>) -> io::Result<ProgramResult> {
     let mut codes = get_codes(filepath).unwrap();
     let mut context = ProgramContext::new();
     context.input = input;
