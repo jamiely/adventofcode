@@ -29,6 +29,10 @@ pub enum InstructionOperator {
     Mult = 2,
     In = 3,
     Out = 4,
+    JumpIfTrue = 5,
+    JumpIfFalse = 6,
+    LessThan = 7,
+    Equals = 8,
     Halt = 99
 }
 
@@ -122,9 +126,7 @@ impl OpCode {
 
 impl ProgramContext {
     fn change(&self) -> ContextChange {
-        let mut change = ContextChange::new();
-        change.instruction_pointer = self.instruction_pointer;
-        return change;
+        return ContextChange::new();
     }
 
     fn get_current_opcode(&self) -> i32 {
@@ -198,7 +200,7 @@ impl InstructionParam {
 #[derive(Debug, Clone)]
 pub struct ContextChange {
     // change the instruction pointer
-    instruction_pointer: usize,
+    instruction_pointer: Option<usize>,
     halt: bool,
     // (address, value) pairs to set
     set_values: Vec<(usize, i32)>,
@@ -210,7 +212,7 @@ pub struct ContextChange {
 
 impl ContextChange {
     fn new() -> ContextChange {
-        let instruction_pointer = 0;
+        let instruction_pointer = None;
         let halt = false;
         let set_values = Vec::new();
         let read_input = None;
@@ -226,7 +228,7 @@ impl ContextChange {
     }
 }
 
-type InstructionOperatorFun = fn(context: &ProgramContext) -> Vec<ContextChange>;
+pub type InstructionOperatorFun = fn(context: &ProgramContext) -> Vec<ContextChange>;
 
 #[derive(Clone, Copy)]
 pub struct InstructionType {
@@ -257,6 +259,70 @@ fn op_add(a: i32, b: i32) -> i32 {
 fn op_mult(a: i32, b: i32) -> i32 {
     return a * b;
 }
+
+fn jump_test(context: &ProgramContext, jump_predicate: fn(value: i32) -> bool) -> Vec<ContextChange> {
+    let mut change = context.change();
+    let params = context.get_current_instruction_params();
+    let args: Vec<i32> = params.iter()
+        .map(|param| match param.mode {
+            ParamMode::Position => context.codes[param.value as usize],
+            ParamMode::Immediate => param.value
+        }).collect();
+
+    let test = args[0];
+    if jump_predicate(test) {
+        change.instruction_pointer = Some(args[1] as usize);
+        return [change].to_vec();
+    }
+    return [].to_vec();
+
+}
+
+fn cmp_test(context: &ProgramContext, cmp_predicate: fn(a: i32, b: i32) -> bool) -> Vec<ContextChange> {
+    let mut change = context.change();
+    let params = context.get_current_instruction_params();
+    let args: Vec<i32> = params.iter()
+        .map(|param| match param.mode {
+            ParamMode::Position => context.codes[param.value as usize],
+            ParamMode::Immediate => param.value
+        }).collect();
+
+    let mut store_value = 0;
+    if cmp_predicate(args[0], args[1]) {
+        store_value = 1;
+    }
+    change.set_values.push((params[2].value as usize, store_value));
+    return [change].to_vec();
+
+}
+
+pub const INSTRUCTION_TYPE_JUMP_IFTRUE: InstructionType = InstructionType {
+    op: InstructionOperator::JumpIfTrue, 
+    operand_count: 2,
+    operation: |context: &ProgramContext| -> Vec<ContextChange> {
+        return jump_test(context, |i| i != 0);
+    } };
+
+pub const INSTRUCTION_TYPE_JUMP_IFFALSE: InstructionType = InstructionType {
+    op: InstructionOperator::JumpIfFalse, 
+    operand_count: 2,
+    operation: |context: &ProgramContext| -> Vec<ContextChange> {
+        return jump_test(context, |i| i == 0);
+    } };
+
+pub const INSTRUCTION_TYPE_LESSTHAN: InstructionType = InstructionType {
+    op: InstructionOperator::LessThan, 
+    operand_count: 3,
+    operation: |context: &ProgramContext| -> Vec<ContextChange> {
+        return cmp_test(context, |a,b| a < b);
+    } };
+
+pub const INSTRUCTION_TYPE_EQUALS: InstructionType = InstructionType {
+    op: InstructionOperator::Equals, 
+    operand_count: 3,
+    operation: |context: &ProgramContext| -> Vec<ContextChange> {
+        return cmp_test(context, |a,b| a == b);
+    } };
 
 pub const INSTRUCTION_TYPE_MULT: InstructionType = InstructionType { 
     op: InstructionOperator::Mult, 
@@ -291,13 +357,15 @@ pub const INSTRUCTION_TYPE_OUT: InstructionType = InstructionType {
     operand_count: 1,
     operation: |context: &ProgramContext| -> Vec<ContextChange> {
         let mut change = context.change();
-        let param = context.get_current_instruction_params()[0];
-        if param.is_position() {
-            change.write_output = Some(context.codes[param.value as usize]);
-            return [change].to_vec();
-        }
-        println!("unexpected output param");
-        return [].to_vec();
+        let params = context.get_current_instruction_params();
+        let args: Vec<i32> = params.iter()
+            .map(|param| match param.mode {
+                ParamMode::Position => context.codes[param.value as usize],
+                ParamMode::Immediate => param.value
+            }).collect();
+
+        change.write_output = Some(args[0]);
+        return [change].to_vec();
     } };
 
 pub const INSTRUCTION_TYPE_HALT: InstructionType = InstructionType { 
@@ -315,6 +383,10 @@ pub const INSTRUCTION_TYPES: &'static [&'static InstructionType] = &[
     &INSTRUCTION_TYPE_IN,
     &INSTRUCTION_TYPE_OUT,
     &INSTRUCTION_TYPE_HALT,
+    &INSTRUCTION_TYPE_JUMP_IFTRUE,
+    &INSTRUCTION_TYPE_JUMP_IFFALSE,
+    &INSTRUCTION_TYPE_LESSTHAN,
+    &INSTRUCTION_TYPE_EQUALS,
 ];
 
 #[derive(Debug, Clone)]
@@ -339,6 +411,59 @@ pub struct ProgramResult {
 /// program_context.input = Some(13);
 /// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
 /// assert_eq!(program_result.value, 13);
+/// ```
+/// Tests jumps 1a (position mode)
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<i32> = [3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// program_context.input = Some(99);
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.diagnostic_code, Some(1));
+/// ```
+/// Test jumps 1b (position mode)
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<i32> = [3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// program_context.input = Some(0);
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.diagnostic_code, Some(0));
+/// ```
+/// Test jumps 2a (immediate mode)
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<i32> = [3,3,1105,-1,9,1101,0,0,12,4,12,99,1].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// program_context.input = Some(0);
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.diagnostic_code, Some(0));
+/// ```
+/// Test jumps 2b (immediate mode)
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<i32> = [3,3,1105,-1,9,1101,0,0,12,4,12,99,1].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// program_context.input = Some(99);
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.diagnostic_code, Some(1));
+/// ```
+/// Test all simple
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<i32> = [11108, 0, 0, 1, 4, 1].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.diagnostic_code, Some(1));
+/// ```
+/// Test jumps 3a
+/// ```
+/// use aoc2019::day5::{process_codes2, InstructionOperator, ProgramContext};
+/// let mut codes: Vec<i32> = [3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31, 1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104, 999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99].to_vec();
+/// let mut program_context = ProgramContext::new();
+/// program_context.input = Some(7);
+/// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
+/// assert_eq!(program_result.diagnostic_code, Some(999));
 /// ```
 pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>) -> io::Result<ProgramResult> {
     let mut instruction_types: HashMap<usize, InstructionType> = HashMap::new();
@@ -372,9 +497,17 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
         match program_context.get_current_instruction() {
             Some(instr) => {
                 let changes: Vec<ContextChange> = (instr.get_operator_func())(&program_context);
-                println!("operation={:?} changes={:?}", instr.get_operator(), changes);
+                println!("instr.opcode={:?} instr.itype=(op={:?} operand_count={}) changes={:?}\n", 
+                    instr.opcode, instr.itype.op, instr.itype.operand_count, changes);
+                let mut instruction_pointer_changed = false;
                 for change in changes {
-                    head = change.instruction_pointer;
+                    match change.instruction_pointer {
+                        Some(pointer) => {
+                            instruction_pointer_changed = true;
+                            head = pointer
+                        }
+                        _ => {}
+                    }
 
                     for (addr, value) in change.set_values {
                         codes[addr] = value;
@@ -395,7 +528,9 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
                     halt = change.halt;
                 }
 
-                head += instr.get_operand_count() + 1;
+                if ! instruction_pointer_changed {
+                    head += instr.get_operand_count() + 1;
+                }
             }
             None => {
                 println!("no instruction available");
