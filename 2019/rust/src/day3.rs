@@ -5,7 +5,6 @@ use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use std::cmp::{max, min};
 use std::collections::HashMap;
-use std::iter::FromIterator;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
@@ -142,7 +141,7 @@ pub fn find_instruction_intersection_points(primary: &Vec<Instruction>, other: &
 pub fn find_instruction_intersections(primary: &Vec<Instruction>, other: &Vec<Instruction>) -> Vec<Intersection> {
     let points = instruction_points(primary);
     // we want to convert this to a Set for easy lookup
-    let mut points_set: HashMap<Point, usize> = points.iter().enumerate()
+    let points_set: HashMap<Point, usize> = points.iter().enumerate()
         .map(|(i, p)| (p.to_owned(), i)) 
         .collect();
     

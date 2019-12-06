@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate num_derive;
+
 #[cfg(test)]
 mod tests {
     #[test]
