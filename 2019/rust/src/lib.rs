@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate num_derive;
+extern crate petgraph;
 
 #[cfg(test)]
 mod tests {
@@ -14,3 +15,4 @@ pub mod day2;
 pub mod day3;
 pub mod day4;
 pub mod day5;
+pub mod day6;
