@@ -320,7 +320,8 @@ pub const INSTRUCTION_TYPES: &'static [&'static InstructionType] = &[
 #[derive(Debug, Clone)]
 pub struct ProgramResult {
     pub value: i32,
-    pub output: Vec<i32>
+    pub output: Vec<i32>,
+    pub diagnostic_code: Option<i32>
 }
 
 /// ```
@@ -405,7 +406,8 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
     }
 
     print!("done");
-    return Ok(ProgramResult{value: codes[0], output: output});
+    let diagnostic_code = output.last().map(i32::to_owned);
+    return Ok(ProgramResult{value: codes[0], output: output, diagnostic_code});
 
 }
 
@@ -432,11 +434,12 @@ pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
 }
 
 /// ```
-/// assert_eq!(aoc2019::day5::run_a("../input/2.input").unwrap().value, 1870666);
+/// assert_eq!(aoc2019::day5::run_a("../input/2.input", None).unwrap().value, 1870666);
+/// assert_eq!(aoc2019::day5::run_a("../input/5.input", Some(1)).unwrap().diagnostic_code, Some(15426686));
 /// ```
-pub fn run_a(filepath: &str) -> io::Result<ProgramResult> {
+pub fn run_a(filepath: &str, input: Option<i32>) -> io::Result<ProgramResult> {
     let mut codes = get_codes(filepath).unwrap();
     let mut context = ProgramContext::new();
-    context.input = Some(1);
+    context.input = input;
     return process_codes2(&mut context, &mut codes);
 }
