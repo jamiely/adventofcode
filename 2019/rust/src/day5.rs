@@ -88,11 +88,11 @@ pub fn split_opcode(raw_opcode: i32) -> (String, String) {
 
 impl OpCode {
     /// ```
-    /// use aoc2019::day5::{OpCode, InstructionTypeMult, ParamMode};
+    /// use aoc2019::day5::{OpCode, INSTRUCTION_TYPE_MULT, ParamMode};
     /// // comes from opcode 1002
     /// let parts = ("02".to_string(), "10".to_string());
     /// // 02 is a multiplication
-    /// let itype = &InstructionTypeMult;
+    /// let itype = &INSTRUCTION_TYPE_MULT;
     /// let actual = OpCode::parse(parts.clone(), itype);
     /// let expected = OpCode {
     ///     op: 2,
@@ -246,7 +246,7 @@ fn three_arg_op2(context: &ProgramContext, operation: fn(i32, i32) -> i32) -> Ve
     println!("args={:?}", args);
     let sum = operation(args[0], args[1]);
     let mut change = context.change();
-    change.set_values = [(args[2] as usize, sum)].to_vec();
+    change.set_values = [(params[2].value as usize, sum)].to_vec();
     return [change].to_vec();
 }
 
@@ -316,13 +316,6 @@ pub const INSTRUCTION_TYPES: &'static [&'static InstructionType] = &[
     &INSTRUCTION_TYPE_OUT,
     &INSTRUCTION_TYPE_HALT,
 ];
-
-fn lookup_instruction_type(opcode: i32) -> Option<InstructionType> {
-    return INSTRUCTION_TYPES
-        .iter()
-        .map(|i| i.clone().to_owned())
-        .find(|itype| itype.op as i32 == opcode);
-}
 
 #[derive(Debug, Clone)]
 pub struct ProgramResult {
