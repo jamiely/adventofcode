@@ -4,6 +4,7 @@
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use std::collections::{HashMap, VecDeque};
+use std::iter::FromIterator;
 
 extern crate num;
 
@@ -160,7 +161,7 @@ impl ProgramContext {
         }
     }
     pub fn new() -> ProgramContext {
-        let input = None;
+        let input = VecDeque::new();
         let output = Vec::new();
         let instruction_pointer = 0;
         let instruction_types_by_opcode = HashMap::new();
@@ -570,19 +571,19 @@ pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
 
 /// Day 2
 /// ```
-/// assert_eq!(aoc2019::day5::run("../input/2.input", None).unwrap().value, 1870666);
+/// assert_eq!(aoc2019::day7::run("../input/2.input", Vec::new()).unwrap().value, 1870666);
 /// ```
 /// Part A
 /// ```
-/// assert_eq!(aoc2019::day5::run("../input/5.input", Some(1)).unwrap().diagnostic_code, Some(15426686));
+/// assert_eq!(aoc2019::day7::run("../input/5.input", [1].to_vec()).unwrap().diagnostic_code, Some(15426686));
 /// ```
 /// Part B
 /// ```
-/// assert_eq!(aoc2019::day5::run("../input/5.input", Some(5)).unwrap().diagnostic_code, Some(11430197));
+/// assert_eq!(aoc2019::day7::run("../input/5.input", [5].to_vec()).unwrap().diagnostic_code, Some(11430197));
 /// ```
-pub fn run(filepath: &str, input: Option<i32>) -> io::Result<ProgramResult> {
+pub fn run(filepath: &str, input: Vec<i32>) -> io::Result<ProgramResult> {
     let mut codes = get_codes(filepath).unwrap();
     let mut context = ProgramContext::new();
-    context.input = input;
+    context.input = VecDeque::from(input);
     return process_codes2(&mut context, &mut codes);
 }
