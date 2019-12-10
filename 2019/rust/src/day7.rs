@@ -3,7 +3,7 @@
 /// 
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque, HashSet};
 use std::iter::FromIterator;
 
 extern crate num;
@@ -246,7 +246,7 @@ fn three_arg_op2(context: &ProgramContext, operation: fn(i32, i32) -> i32) -> Ve
             ParamMode::Position => context.codes[param.value as usize],
             ParamMode::Immediate => param.value
         }).collect();
-    println!("args={:?}", args);
+    // println!("args={:?}", args);
     let sum = operation(args[0], args[1]);
     let mut change = context.change();
     change.set_values = [(params[2].value as usize, sum)].to_vec();
@@ -483,23 +483,23 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
         program_context.instruction_pointer = head;
         program_context.should_halt = halt;
         program_context.output = output.clone();
-        println!("head={} codes={:?}", head, codes);
+        // println!("head={} codes={:?}", head, codes);
 
         if head >= codes.len() {
-            println!("out of instructions");
+            // println!("out of instructions");
             break;
         }
  
         if halt {
-            println!("should halt");
+            // println!("should halt");
             break;
         }
 
         match program_context.get_current_instruction() {
             Some(instr) => {
                 let changes: Vec<ContextChange> = (instr.get_operator_func())(&program_context);
-                println!("instr.opcode={:?} instr.itype=(op={:?} operand_count={}) changes={:?}\n", 
-                    instr.opcode, instr.itype.op, instr.itype.operand_count, changes);
+                // println!("instr.opcode={:?} instr.itype=(op={:?} operand_count={}) changes={:?}\n", 
+                //     instr.opcode, instr.itype.op, instr.itype.operand_count, changes);
                 let mut instruction_pointer_changed = false;
                 for change in changes {
                     match change.instruction_pointer {
@@ -541,7 +541,7 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
 
     }
 
-    print!("done");
+    // print!("done");
     let diagnostic_code = output.last().map(i32::to_owned);
     return Ok(ProgramResult{value: codes[0], output: output, diagnostic_code});
 
@@ -583,20 +583,22 @@ pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
 ////// ```
 /// Day 7 tests
 /// ```
-/// assert_eq!(aoc2019::day7::get_max_thruster_signal("../input/7a.input", [4,3,2,1,0]).unwrap(), 43210);
+/// let codes = aoc2019::day7::get_codes("../input/7a.input").unwrap();
+/// assert_eq!(aoc2019::day7::get_max_thruster_signal(&codes, [4,3,2,1,0]).unwrap(), 43210);
 /// ```
 /// ```
-/// assert_eq!(aoc2019::day7::get_max_thruster_signal("../input/7b.input", [0,1,2,3,4]).unwrap(), 54321);
+/// let codes = aoc2019::day7::get_codes("../input/7b.input").unwrap();
+/// assert_eq!(aoc2019::day7::get_max_thruster_signal(&codes, [0,1,2,3,4]).unwrap(), 54321);
 /// ```
 /// ```
-/// assert_eq!(aoc2019::day7::get_max_thruster_signal("../input/7c.input", [1,0,4,3,2]).unwrap(), 65210);
+/// let codes = aoc2019::day7::get_codes("../input/7c.input").unwrap();
+/// assert_eq!(aoc2019::day7::get_max_thruster_signal(&codes, [1,0,4,3,2]).unwrap(), 65210);
 /// ```
-pub fn get_max_thruster_signal(filepath: &str, phase_setting_sequence: [i32; 5]) -> io::Result<i32> {
+pub fn get_max_thruster_signal(codes: &Vec<i32>, phase_setting_sequence: [i32; 5]) -> io::Result<i32> {
     let mut last_output = 0;
-    let codes_copy = get_codes(filepath).unwrap();
     for phase_setting in phase_setting_sequence.iter() {
         let result = run_for_phase_sequence(
-            &codes_copy, *phase_setting, last_output)?;
+            &codes, *phase_setting, last_output)?;
         if result.output.len() != 1 {
             return Err(io::Error::new(io::ErrorKind::Other, "Expected only one output"));
         }
@@ -612,4 +614,42 @@ pub fn run_for_phase_sequence(
     let mut context = ProgramContext::new();
     context.input = VecDeque::from(vec![phase_setting, input_signal]);
     return process_codes2(&mut context, &mut codes);
+}
+
+/// ```
+/// let result = aoc2019::day7::run_a("../input/7.input");
+/// assert_eq!(result.unwrap(), 914828);
+/// ```
+pub fn run_a(filepath: &str) -> io::Result<i32> {
+    let mut max_signal: i32 = -1;
+    let codes = get_codes(filepath).unwrap();
+
+    for i in (0..=4) {
+        for j in (0..=4) {
+            for k in (0..=4) {
+                for l in (0..=4) {
+                    for m in (0..=4) {
+                        let set = HashSet::<i32>::from_iter(vec![i, j, k, l, m]);
+                        if set.len() != 5 { 
+                            continue; 
+                        }
+
+                        let result = get_max_thruster_signal(
+                            &codes, [i, j, k, l, m]
+                        );
+            
+                        match result {
+                            Ok(signal) if signal > max_signal => {
+                                max_signal = signal;
+                                println!("Got larger value {}{}{}{}{} => {}", i, j, k, l, m, signal);
+                            }
+                            Ok(signal) => println!("Got smaller value {}", signal),
+                            _ => println!("There was some problem")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return Ok(max_signal);
 }
