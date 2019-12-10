@@ -1,9 +1,9 @@
 ///
-/// https://adventofcode.com/2019/day/5
+/// https://adventofcode.com/2019/day/7
 /// 
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 extern crate num;
 
@@ -57,7 +57,7 @@ impl Instruction {
 }
 
 pub struct ProgramContext {
-    pub input: Option<i32>,
+    pub input: VecDeque<i32>,
     output: Vec<i32>,
     instruction_pointer: usize,
     instruction_types_by_opcode: HashMap<usize, InstructionType>,
@@ -515,7 +515,7 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
 
                     match change.read_input {
                         Some(address) =>
-                            match program_context.input {
+                            match program_context.input.pop_front() {
                                 Some(input) => codes[address as usize] = input,
                                 _ => {}
                             }
