@@ -569,21 +569,47 @@ pub fn get_codes(filepath: &str) -> io::Result<Vec<i32>> {
     return Ok(parse_codes(reader));
 }
 
-/// Day 2
+////// Day 2
+////// ```
+////// assert_eq!(aoc2019::day7::run("../input/2.input", Vec::new()).unwrap().value, 1870666);
+////// ```
+////// Part A
+////// ```
+////// assert_eq!(aoc2019::day7::run("../input/5.input", [1].to_vec()).unwrap().diagnostic_code, Some(15426686));
+////// ```
+////// Part B
+////// ```
+////// assert_eq!(aoc2019::day7::run("../input/5.input", [5].to_vec()).unwrap().diagnostic_code, Some(11430197));
+////// ```
+/// Day 7 tests
 /// ```
-/// assert_eq!(aoc2019::day7::run("../input/2.input", Vec::new()).unwrap().value, 1870666);
+/// assert_eq!(aoc2019::day7::get_max_thruster_signal("../input/7a.input", [4,3,2,1,0]).unwrap(), 43210);
 /// ```
-/// Part A
 /// ```
-/// assert_eq!(aoc2019::day7::run("../input/5.input", [1].to_vec()).unwrap().diagnostic_code, Some(15426686));
+/// assert_eq!(aoc2019::day7::get_max_thruster_signal("../input/7b.input", [0,1,2,3,4]).unwrap(), 54321);
 /// ```
-/// Part B
 /// ```
-/// assert_eq!(aoc2019::day7::run("../input/5.input", [5].to_vec()).unwrap().diagnostic_code, Some(11430197));
+/// assert_eq!(aoc2019::day7::get_max_thruster_signal("../input/7c.input", [1,0,4,3,2]).unwrap(), 65210);
 /// ```
-pub fn run(filepath: &str, input: Vec<i32>) -> io::Result<ProgramResult> {
-    let mut codes = get_codes(filepath).unwrap();
+pub fn get_max_thruster_signal(filepath: &str, phase_setting_sequence: [i32; 5]) -> io::Result<i32> {
+    let mut last_output = 0;
+    let codes_copy = get_codes(filepath).unwrap();
+    for phase_setting in phase_setting_sequence.iter() {
+        let result = run_for_phase_sequence(
+            &codes_copy, *phase_setting, last_output)?;
+        if result.output.len() != 1 {
+            return Err(io::Error::new(io::ErrorKind::Other, "Expected only one output"));
+        }
+        last_output = result.output[0];
+    }
+    return Ok(last_output);
+}
+
+pub fn run_for_phase_sequence(
+    original_codes: &Vec<i32>, phase_setting: i32, 
+    input_signal: i32) -> io::Result<ProgramResult> {
+    let mut codes = original_codes.clone();
     let mut context = ProgramContext::new();
-    context.input = VecDeque::from(input);
+    context.input = VecDeque::from(vec![phase_setting, input_signal]);
     return process_codes2(&mut context, &mut codes);
 }
