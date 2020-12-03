@@ -1,3 +1,10 @@
+/**
+ * https://adventofcode.com/2020/day/2
+ * 
+ * ```
+ * javac Day2.java && java Day2 day2.input
+ * ```
+ */
 import java.nio.file.*;
 import java.util.stream.Collectors;
 import java.util.*;

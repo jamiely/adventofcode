@@ -1,3 +1,10 @@
+/**
+ * https://adventofcode.com/2020/day/3
+ * 
+ * ```
+ * javac Day3.java && java Day3 day3.input
+ * ```
+ */
 import java.io.*;
 
 public class Day3 {
