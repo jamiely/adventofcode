@@ -1,3 +1,5 @@
+// Adapted https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+
 import java.io.*;
 import java.util.*;
 import java.util.function.Function;
