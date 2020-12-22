@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import java.util.function.Function;
 
 public class Day18 {
     public static List<String> getTokens(String line) {
@@ -40,7 +41,7 @@ public class Day18 {
         return lastNumber;
     }
 
-    public static long getValue(String line) {
+    public static long getValue(String line, Function<Character, Integer> precedenceFunction) {
         List<String> tokens = getTokens(line);
         Deque<Long> operands = new ArrayDeque<>();
         Deque<Character> operators = new ArrayDeque<>();
@@ -53,7 +54,7 @@ public class Day18 {
             else if(isOperator(firstChar)) {
                 while(!operators.isEmpty()
                     && isOperator(operators.peekFirst())
-                    && comparePrecedence(firstChar, operators.peekFirst()) <= 0) {
+                    && comparePrecedence(firstChar, operators.peekFirst(), precedenceFunction) <= 0) {
                         popOperator(operands, operators);
                     }
                 operators.addFirst(firstChar);
@@ -89,18 +90,30 @@ public class Day18 {
     }
 
     public static boolean isOperator(char op) {
-        return operatorPrecedence(op) > 0;
+        switch(op) {
+            case '+':
+            case '*':
+                return true;
+        }
+        return false;
     }
 
-    public static int comparePrecedence(char a, char b) {
+    public static int comparePrecedence(char a, char b, Function<Character, Integer> precedenceFunction) {
         return Integer.compare(
-            operatorPrecedence(a),
-            operatorPrecedence(b));
+            precedenceFunction.apply(a),
+            precedenceFunction.apply(b));
     }
 
-    public static int operatorPrecedence(char op) {
+    public static int operatorPrecedenceA(char op) {
         switch(op) {
             case '+': return 1;
+            case '*': return 1;
+            default: return -1;
+        }
+    }
+    public static int operatorPrecedenceB(char op) {
+        switch(op) {
+            case '+': return 2;
             case '*': return 1;
             default: return -1;
         }
@@ -127,12 +140,12 @@ public class Day18 {
         }
     }
 
-    public static long getAnswerA(String filepath) throws IOException {
+    public static long getAnswerX(String filepath, Function<Character, Integer> precedenceFunction) throws IOException {
         long sum = 0;
         try(BufferedReader reader = new BufferedReader(new FileReader(filepath))) {
             String line = reader.readLine();
             while(line != null) {
-                long value = getValue(line);
+                long value = getValue(line, precedenceFunction);
                 System.out.println(line + " = " + value);
                 sum += value;
                 line = reader.readLine();
@@ -141,8 +154,16 @@ public class Day18 {
         return sum;
     }
 
+    public static long getAnswerA(String filepath) throws IOException {
+        return getAnswerX(filepath, Day18::operatorPrecedenceA);
+    }
+    public static long getAnswerB(String filepath) throws IOException {
+        return getAnswerX(filepath, Day18::operatorPrecedenceB);
+    }
+
     public static void main(String[] args) throws IOException {
         System.out.println("A. The sum of expressions is " + getAnswerA(args[0]));
+        System.out.println("B. The sum of expressions with updated precendence is " + getAnswerB(args[0]));
     }
     
 }
