@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use std::collections::{HashMap, VecDeque, HashSet};
 use std::iter::FromIterator;
+use std::fmt;
 
 extern crate num;
 
@@ -57,11 +58,11 @@ impl Instruction {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ProgramContext {
     pub input: VecDeque<i32>,
     output: Vec<i32>,
     instruction_pointer: usize,
-    instruction_types_by_opcode: HashMap<usize, InstructionType>,
     codes: Vec<i32>,
     should_halt: bool
 }
@@ -133,12 +134,12 @@ impl ProgramContext {
     fn get_current_opcode(&self) -> i32 {
         return self.codes[self.instruction_pointer];
     }
-    fn get_current_instruction(&self) -> Option<Instruction> {
+    fn get_current_instruction(&self, instruction_types_by_opcode: &HashMap<usize, InstructionType>) -> Option<Instruction> {
         let raw_opcode = self.get_current_opcode();
         let opcode_parts = split_opcode(raw_opcode);
         let op = opcode_parts.0.parse::<i32>().unwrap();
         
-        return self.instruction_types_by_opcode.get(&(op as usize))
+        return instruction_types_by_opcode.get(&(op as usize))
             .map(|itype| {
                 let opcode = OpCode::parse(opcode_parts, itype);
                 Instruction {itype: *itype, opcode}
@@ -164,7 +165,6 @@ impl ProgramContext {
         let input = VecDeque::new();
         let output = Vec::new();
         let instruction_pointer = 0;
-        let instruction_types_by_opcode = HashMap::new();
         let codes = Vec::new();
         let should_halt = false;
 
@@ -172,7 +172,6 @@ impl ProgramContext {
             input,
             output,
             instruction_pointer,
-            instruction_types_by_opcode,
             codes,
             should_halt,
         }
@@ -391,10 +390,22 @@ pub const INSTRUCTION_TYPES: &'static [&'static InstructionType] = &[
 ];
 
 #[derive(Debug, Clone)]
-pub struct ProgramResult {
-    pub value: i32,
-    pub output: Vec<i32>,
-    pub diagnostic_code: Option<i32>
+pub enum SuspendReason {
+    InputIO
+}
+
+#[derive(Clone)]
+pub enum ProcessState {
+    SuspendedProcess {
+        codes: Vec<i32>,
+        context: ProgramContext,
+        reason: SuspendReason
+    },
+    ProgramResult {
+        value: i32,
+        output: Vec<i32>,
+        diagnostic_code: Option<i32>
+    }
 }
 
 /// ```
@@ -466,7 +477,7 @@ pub struct ProgramResult {
 /// let program_result = process_codes2(&mut program_context, &mut codes).unwrap();
 /// assert_eq!(program_result.diagnostic_code, Some(999));
 /// ```
-pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>) -> io::Result<ProgramResult> {
+pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>) -> io::Result<ProcessState> {
     let mut instruction_types: HashMap<usize, InstructionType> = HashMap::new();
     let mut head: usize = 0;
     let mut halt = false;
@@ -475,8 +486,6 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
     for _itype in INSTRUCTION_TYPES {
         instruction_types.insert(_itype.op as usize, **_itype);
     }
-
-    program_context.instruction_types_by_opcode = instruction_types;
 
     loop {
         program_context.codes = codes.clone();
@@ -495,7 +504,7 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
             break;
         }
 
-        match program_context.get_current_instruction() {
+        match program_context.get_current_instruction(instruction_types) {
             Some(instr) => {
                 let changes: Vec<ContextChange> = (instr.get_operator_func())(&program_context);
                 // println!("instr.opcode={:?} instr.itype=(op={:?} operand_count={}) changes={:?}\n", 
@@ -543,7 +552,7 @@ pub fn process_codes2(program_context: &mut ProgramContext, codes: &mut Vec<i32>
 
     // print!("done");
     let diagnostic_code = output.last().map(i32::to_owned);
-    return Ok(ProgramResult{value: codes[0], output: output, diagnostic_code});
+    return Ok(ProcessState::ProgramResult{value: codes[0], output: output, diagnostic_code});
 
 }
 
@@ -609,7 +618,7 @@ pub fn get_max_thruster_signal(codes: &Vec<i32>, phase_setting_sequence: [i32; 5
 
 pub fn run_for_phase_sequence(
     original_codes: &Vec<i32>, phase_setting: i32, 
-    input_signal: i32) -> io::Result<ProgramResult> {
+    input_signal: i32) -> io::Result<ProcessState> {
     let mut codes = original_codes.clone();
     let mut context = ProgramContext::new();
     context.input = VecDeque::from(vec![phase_setting, input_signal]);
@@ -624,11 +633,11 @@ pub fn run_a(filepath: &str) -> io::Result<i32> {
     let mut max_signal: i32 = -1;
     let codes = get_codes(filepath).unwrap();
 
-    for i in (0..=4) {
-        for j in (0..=4) {
-            for k in (0..=4) {
-                for l in (0..=4) {
-                    for m in (0..=4) {
+    for i in 0..=4 {
+        for j in 0..=4 {
+            for k in 0..=4 {
+                for l in 0..=4 {
+                    for m in 0..=4 {
                         let set = HashSet::<i32>::from_iter(vec![i, j, k, l, m]);
                         if set.len() != 5 { 
                             continue; 
