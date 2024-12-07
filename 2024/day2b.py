@@ -1,77 +1,61 @@
 # read from day1.py
 
 from io import open
+import copy
 
-safe_count = 0
+def run():
+    safe_count = 0
 
-with open("day2.input", "r") as f:
-    for line in f:
-        rest = [int(x) for x in line.split(" ")]
-        
-        direction = None
-        is_safe = True
-        last = None
-        bad_count = 0
-        # print(f"@@@@ #{rest}")
-        for num in rest:
-          last_bad = False
-          if last is None:
-              last = num
-              continue
+    with open("day2.input", "r") as f:
+        for line in f:
+            rest = [int(x) for x in line.split(" ")]
+            if line_safe(rest):
+                safe_count += 1
+            elif attempt_recover(rest):
+                safe_count += 1
+                
+    print(safe_count)
 
-          diff = num - last
-          adiff = abs(diff)
+def attempt_recover(orig):
+    for i in range(len(orig)):
+        line = copy.copy(orig)
+        line.pop(i)
+        if line_safe(line):
+            return True
+    return False
 
-          if adiff == 0:
-            bad_count += 1
-            is_safe = False
-            print(f"same number {rest} bad_count={bad_count}")
-            # do not set the last number since we're skipping
-            continue
-          
-        #   print(f"adiff={adiff} last={last} num={num}")
-        
-          if direction is None:
-              if diff < 0:
-                  direction = 'd'
-              else:
-                  direction = 'i'
-            #   print(f"set direction to {direction}")
-
-          if direction == 'i':
-              if diff <= 0:
-                  last_bad = True
-                  print(f"a diff={diff} last={last} num={num}")
-          else: # decreasing
-              if diff >= 0:
-                  last_bad = True
-                  print("b")
-              
-          if adiff < 1:
-              last_bad = True
-              print("c")
-
-          elif adiff > 3:
-              last_bad = True
-              print(f"d diff={diff} last={last} num={num}")
-
-          if last_bad:
-              print(f"last_bad True bad_count={bad_count} last={last} num={num} adiff={adiff}")
-              bad_count += 1
-              is_safe = False
-              print(f"last_bad True bad_count={bad_count} last={last} num={num} adiff={adiff}")
-          else:
-              last = num
-            #   print(f"set last to {num} ")
-
-        if is_safe or bad_count < 2:
-            safe_count += 1
-            if bad_count > 0:
-                print(f"Safe: bad_count={bad_count} {rest}")
-
-print(safe_count)
-          
-          
-          
             
-        
+def line_safe(rest):
+    direction = None
+    last = None
+
+    for num in rest:
+        if last is None:
+            last = num
+            continue
+
+        diff = num - last
+        last = num
+        adiff = abs(diff)
+
+        if diff == 0:
+            return False
+
+        if direction is None:
+            direction = 'inc' if diff > 0 else 'dec'
+
+        if direction == 'inc':
+            if diff <= 0:
+                return False
+        elif diff >= 0:
+            return False
+
+        if adiff < 1:
+            return False
+
+        elif adiff > 3:
+            return False
+    
+    return True
+
+run()
