@@ -1,7 +1,7 @@
 from io import open
 
 def run():
-  grid = load("day10.small.input")
+  grid = load("day10.input")
   result = process(grid)
 
   print(result)
@@ -14,27 +14,38 @@ def load(path):
     } for display in list(line.strip())] for line in f]
   
 def process(grid):
-  heads = 0
-  for i in reversed(range(10)):
-    for (r, c) in grid_indices(grid):
-      if grid[r][c]["display"] != i:
-        continue
+  # just going to brute force this
+
+  count = 0
+  for (r, c) in grid_indices(grid):
+    grid[r][c]["coords"] = (r, c)
+
+  for (r, c) in grid_indices(grid):
+    if grid[r][c]["display"] != 0:
+      continue
+    
+    count += traverse(grid, (r, c), 0)
 
 
-      if i == 9:
-        score = 1
-      else:
-        # check to see if it neighbors any existing nodes
-        score = sum(neighbor["score"] for neighbor in get_neighbors(grid, r, c, i + 1))
-        
-      grid[r][c]["score"] = score
-      
-      print(f"i={i} ({r}, {c}) score={score}")
+  return count
 
-      if i == 0:
-        heads += grid[r][c]["score"]
+def traverse(grid, coords, match):
+  # print(f"coords={coords} match={match}")
+  (r, c) = coords
+  display = grid[r][c]["display"]
+  if display != match:
+    return 0
+  elif display == 9:
+    return 1
+  
+  next_match = match + 1
 
-  return heads
+  count = 0
+  for neighbor in get_neighbors(grid, r, c, next_match):
+    result = traverse(grid, neighbor["coords"], next_match)
+    count += result
+
+  return count
 
 def grid_bounds(grid):
   return (len(grid), len(grid[0]))
